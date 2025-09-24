@@ -1,0 +1,10 @@
+{
+  "COMPANY_CORE": {
+    "NVIDIA": {
+      "tickers": ["NVDA"],
+      "aliases": ["NVIDIA","엔비디아","Nvidia"],
+      "context": ["GPU","CUDA","TensorRT","NVLink","NVSwitch","Omniverse","NIM","DGX","HGX","H100","H200","GB200","Blackwell","Grace","Grace Hopper"],
+      "negative": ["apple juice","fruit","nutrition","orchard"]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "COMPANY_CORE": {
+    "NVIDIA": {
+      "tickers": ["NVDA"],
+      "aliases": ["NVIDIA","엔비디아","엔비디아사","Nvidia"],
+      "context": ["GPU","CUDA","TensorRT","NVLink","NVSwitch","Omniverse","NIM","DGX","HGX","H100","H200","GB200","Blackwell","Grace","Grace Hopper"],
+      "negative": ["apple juice","fruit","nutrition","orchard"]
+    }
+  },
+  "PRODUCTS": ["H100","H200","GB200","B200","A100","Hopper","Blackwell","DGX","HGX","NVLink","NVSwitch"],
+  "ECOSYSTEM": ["HBM3E","CoWoS","TSMC","ASML","Micron","SK hynix","Samsung Memory","Coherent","Infiniband","Ethernet","CXL","PCIe Gen5","PCIe Gen6","MLPerf"],
+  "CUSTOMERS_PARTNERS": ["AWS","Amazon Web Services","Azure","Microsoft","Google Cloud","GCP","Meta","Tesla","Dell","HPE","Lenovo","Foxconn","Quanta"],
+  "COMPETITORS": ["AMD","Intel","Google TPU","TPU","Gaudi","MI300","MI325","MI350"]
+}

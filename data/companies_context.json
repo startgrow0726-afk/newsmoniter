@@ -1,0 +1,1530 @@
+{
+  "version": 1,
+  "companies": [
+    {
+      "country": "US",
+      "name": "NVIDIA",
+      "tickers": [
+        "NVDA"
+      ],
+      "aliases": [
+        "nvidia",
+        "엔비디아",
+        "nvidia corp",
+        "nvidia corporation"
+      ],
+      "context": [
+        "gpu",
+        "cuda",
+        "geforce",
+        "h100",
+        "blackwell",
+        "datacenter",
+        "tensor core",
+        "ai accelerator",
+        "grace"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "Apple",
+      "tickers": [
+        "AAPL"
+      ],
+      "aliases": [
+        "apple inc",
+        "apple"
+      ],
+      "context": [
+        "iphone",
+        "ios",
+        "mac",
+        "macbook",
+        "app store",
+        "cupertino",
+        "tim cook",
+        "vision pro"
+      ],
+      "negative": [
+        "fruit",
+        "orchard",
+        "cider",
+        "pie"
+      ]
+    },
+    {
+      "country": "US",
+      "name": "Microsoft",
+      "tickers": [
+        "MSFT"
+      ],
+      "aliases": [
+        "microsoft",
+        "msft"
+      ],
+      "context": [
+        "windows",
+        "azure",
+        "office",
+        "copilot",
+        "xbox",
+        "satya nadella",
+        "bing"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "Alphabet",
+      "tickers": [
+        "GOOGL",
+        "GOOG"
+      ],
+      "aliases": [
+        "alphabet",
+        "google",
+        "구글"
+      ],
+      "context": [
+        "search",
+        "android",
+        "youtube",
+        "gemini",
+        "pichai",
+        "chrome",
+        "cloud"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "Amazon",
+      "tickers": [
+        "AMZN"
+      ],
+      "aliases": [
+        "amazon",
+        "aws",
+        "아마존"
+      ],
+      "context": [
+        "prime",
+        "fulfillment",
+        "alexa",
+        "kindle",
+        "marketplace",
+        "cloud"
+      ],
+      "negative": [
+        "rainforest",
+        "river"
+      ]
+    },
+    {
+      "country": "US",
+      "name": "Meta",
+      "tickers": [
+        "META"
+      ],
+      "aliases": [
+        "meta",
+        "facebook",
+        "instagram",
+        "whatsapp",
+        "oculus"
+      ],
+      "context": [
+        "reels",
+        "messenger",
+        "vr",
+        "ar",
+        "zuckerberg"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "Tesla",
+      "tickers": [
+        "TSLA"
+      ],
+      "aliases": [
+        "tesla",
+        "테슬라"
+      ],
+      "context": [
+        "model 3",
+        "model y",
+        "fsd",
+        "autopilot",
+        "gigafactory",
+        "elon musk"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "Berkshire Hathaway",
+      "tickers": [
+        "BRK.A",
+        "BRK.B"
+      ],
+      "aliases": [
+        "berkshire",
+        "buffett",
+        "berkshire hathaway"
+      ],
+      "context": [
+        "insurance",
+        "geico",
+        "warren buffett",
+        "omaha"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "JPMorgan Chase",
+      "tickers": [
+        "JPM"
+      ],
+      "aliases": [
+        "jpmorgan",
+        "jp morgan",
+        "chase"
+      ],
+      "context": [
+        "investment bank",
+        "jamie dimon",
+        "credit card",
+        "trading"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "Visa",
+      "tickers": [
+        "V"
+      ],
+      "aliases": [
+        "visa inc",
+        "visa"
+      ],
+      "context": [
+        "payments",
+        "network",
+        "card",
+        "merchant",
+        "interchange"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "Mastercard",
+      "tickers": [
+        "MA"
+      ],
+      "aliases": [
+        "mastercard",
+        "master card"
+      ],
+      "context": [
+        "payments",
+        "network",
+        "card",
+        "merchant",
+        "interchange"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "UnitedHealth Group",
+      "tickers": [
+        "UNH"
+      ],
+      "aliases": [
+        "unitedhealth",
+        "unh",
+        "optum"
+      ],
+      "context": [
+        "healthcare",
+        "insurance",
+        "optum"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "Johnson & Johnson",
+      "tickers": [
+        "JNJ"
+      ],
+      "aliases": [
+        "johnson & johnson",
+        "jnj"
+      ],
+      "context": [
+        "pharma",
+        "medical devices",
+        "consumer health"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "ExxonMobil",
+      "tickers": [
+        "XOM"
+      ],
+      "aliases": [
+        "exxon",
+        "exxonmobil"
+      ],
+      "context": [
+        "oil",
+        "gas",
+        "upstream",
+        "downstream",
+        "permian"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "Chevron",
+      "tickers": [
+        "CVX"
+      ],
+      "aliases": [
+        "chevron"
+      ],
+      "context": [
+        "oil",
+        "gas",
+        "upstream",
+        "downstream",
+        "permian"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "Walmart",
+      "tickers": [
+        "WMT"
+      ],
+      "aliases": [
+        "walmart"
+      ],
+      "context": [
+        "retail",
+        "grocery",
+        "sam's club",
+        "ecommerce"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "Costco",
+      "tickers": [
+        "COST"
+      ],
+      "aliases": [
+        "costco",
+        "costco wholesale"
+      ],
+      "context": [
+        "membership",
+        "warehouse",
+        "retail",
+        "kirkland"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "Home Depot",
+      "tickers": [
+        "HD"
+      ],
+      "aliases": [
+        "home depot"
+      ],
+      "context": [
+        "home improvement",
+        "diy",
+        "pro customer",
+        "appliances"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "Procter & Gamble",
+      "tickers": [
+        "PG"
+      ],
+      "aliases": [
+        "p&g",
+        "procter and gamble",
+        "procter & gamble"
+      ],
+      "context": [
+        "household",
+        "consumer",
+        "tide",
+        "pampers",
+        "gillette"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "Coca-Cola",
+      "tickers": [
+        "KO"
+      ],
+      "aliases": [
+        "coca-cola",
+        "coke"
+      ],
+      "context": [
+        "beverage",
+        "soft drink",
+        "sprite",
+        "fanta"
+      ],
+      "negative": [
+        "diet",
+        "cocaine"
+      ]
+    },
+    {
+      "country": "US",
+      "name": "PepsiCo",
+      "tickers": [
+        "PEP"
+      ],
+      "aliases": [
+        "pepsico",
+        "pepsi"
+      ],
+      "context": [
+        "beverage",
+        "snack",
+        "lays",
+        "doritos",
+        "mountain dew",
+        "quaker"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "Intel",
+      "tickers": [
+        "INTC"
+      ],
+      "aliases": [
+        "intel"
+      ],
+      "context": [
+        "cpu",
+        "x86",
+        "foundry services",
+        "alchemist",
+        "arc"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "Advanced Micro Devices",
+      "tickers": [
+        "AMD"
+      ],
+      "aliases": [
+        "amd",
+        "advanced micro devices"
+      ],
+      "context": [
+        "ryzen",
+        "epyc",
+        "radeon",
+        "mi300",
+        "gpu",
+        "cpu"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "Broadcom",
+      "tickers": [
+        "AVGO"
+      ],
+      "aliases": [
+        "broadcom",
+        "avago"
+      ],
+      "context": [
+        "semiconductor",
+        "networking",
+        "vmware",
+        "switch",
+        "wireless"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "Qualcomm",
+      "tickers": [
+        "QCOM"
+      ],
+      "aliases": [
+        "qualcomm"
+      ],
+      "context": [
+        "snapdragon",
+        "modem",
+        "5g",
+        "rf front-end"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "Micron Technology",
+      "tickers": [
+        "MU"
+      ],
+      "aliases": [
+        "micron",
+        "micron technology"
+      ],
+      "context": [
+        "dram",
+        "nand",
+        "memory",
+        "hb m"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "Texas Instruments",
+      "tickers": [
+        "TXN"
+      ],
+      "aliases": [
+        "texas instruments",
+        "ti"
+      ],
+      "context": [
+        "analog",
+        "embedded",
+        "semiconductor"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "Applied Materials",
+      "tickers": [
+        "AMAT"
+      ],
+      "aliases": [
+        "applied materials"
+      ],
+      "context": [
+        "semiconductor equipment",
+        "dep",
+        "etch",
+        "fab tools"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "Oracle",
+      "tickers": [
+        "ORCL"
+      ],
+      "aliases": [
+        "oracle"
+      ],
+      "context": [
+        "database",
+        "cloud",
+        "fusion",
+        "erp"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "IBM",
+      "tickers": [
+        "IBM"
+      ],
+      "aliases": [
+        "ibm",
+        "international business machines"
+      ],
+      "context": [
+        "mainframe",
+        "consulting",
+        "watsonx",
+        "hybrid cloud",
+        "red hat"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "Salesforce",
+      "tickers": [
+        "CRM"
+      ],
+      "aliases": [
+        "salesforce",
+        "crm"
+      ],
+      "context": [
+        "sales cloud",
+        "service cloud",
+        "tableau",
+        "slack"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "Adobe",
+      "tickers": [
+        "ADBE"
+      ],
+      "aliases": [
+        "adobe"
+      ],
+      "context": [
+        "photoshop",
+        "acrobat",
+        "creative cloud",
+        "firefly"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "Netflix",
+      "tickers": [
+        "NFLX"
+      ],
+      "aliases": [
+        "netflix"
+      ],
+      "context": [
+        "streaming",
+        "content",
+        "originals",
+        "subscription"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "Walt Disney",
+      "tickers": [
+        "DIS"
+      ],
+      "aliases": [
+        "disney",
+        "walt disney"
+      ],
+      "context": [
+        "espn",
+        "disney+",
+        "parks",
+        "pixar",
+        "marvel",
+        "lucasfilm"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "PayPal",
+      "tickers": [
+        "PYPL"
+      ],
+      "aliases": [
+        "paypal"
+      ],
+      "context": [
+        "payments",
+        "bnpl",
+        "venmo",
+        "checkout"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "Uber Technologies",
+      "tickers": [
+        "UBER"
+      ],
+      "aliases": [
+        "uber"
+      ],
+      "context": [
+        "rides",
+        "delivery",
+        "ubereats",
+        "mobility"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "Airbnb",
+      "tickers": [
+        "ABNB"
+      ],
+      "aliases": [
+        "airbnb"
+      ],
+      "context": [
+        "stays",
+        "hosts",
+        "booking",
+        "lodging"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "ServiceNow",
+      "tickers": [
+        "NOW"
+      ],
+      "aliases": [
+        "servicenow"
+      ],
+      "context": [
+        "workflow",
+        "itsm",
+        "platform",
+        "automation"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "Snowflake",
+      "tickers": [
+        "SNOW"
+      ],
+      "aliases": [
+        "snowflake"
+      ],
+      "context": [
+        "data cloud",
+        "warehouse",
+        "lakehouse"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "Palantir",
+      "tickers": [
+        "PLTR"
+      ],
+      "aliases": [
+        "palantir"
+      ],
+      "context": [
+        "gotham",
+        "foundry",
+        "ai platform",
+        "defense"
+      ],
+      "negative": []
+    },
+    {
+      "country": "US",
+      "name": "Cisco Systems",
+      "tickers": [
+        "CSCO"
+      ],
+      "aliases": [
+        "cisco",
+        "cisco systems"
+      ],
+      "context": [
+        "networking",
+        "switch",
+        "router",
+        "security"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "삼성전자",
+      "tickers": [
+        "005930"
+      ],
+      "aliases": [
+        "samsung electronics",
+        "삼성전자",
+        "samsung"
+      ],
+      "context": [
+        "galaxy",
+        "dram",
+        "foundry",
+        "hbm",
+        "memory",
+        "seoul"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "SK하이닉스",
+      "tickers": [
+        "000660"
+      ],
+      "aliases": [
+        "sk hynix",
+        "sk하이닉스",
+        "하이닉스"
+      ],
+      "context": [
+        "dram",
+        "nand",
+        "hbm",
+        "memory",
+        "ai server"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "삼성SDI",
+      "tickers": [
+        "006400"
+      ],
+      "aliases": [
+        "samsung sdi",
+        "삼성sdi"
+      ],
+      "context": [
+        "battery",
+        "ev",
+        "cylindrical",
+        "prismatic"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "LG화학",
+      "tickers": [
+        "051910"
+      ],
+      "aliases": [
+        "lg chem",
+        "lg화학"
+      ],
+      "context": [
+        "petrochemical",
+        "battery materials",
+        "cathode"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "LG에너지솔루션",
+      "tickers": [
+        "373220"
+      ],
+      "aliases": [
+        "lg energy solution",
+        "lg에너지솔루션",
+        "lg es"
+      ],
+      "context": [
+        "ev battery",
+        "cylindrical",
+        "pouch",
+        "gm ultium"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "현대차",
+      "tickers": [
+        "005380"
+      ],
+      "aliases": [
+        "hyundai motor",
+        "현대자동차",
+        "현대차"
+      ],
+      "context": [
+        "ev",
+        "ioniq",
+        "genesis",
+        "u.s. plant",
+        "av"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "기아",
+      "tickers": [
+        "000270"
+      ],
+      "aliases": [
+        "kia",
+        "기아자동차",
+        "기아"
+      ],
+      "context": [
+        "ev",
+        "ev6",
+        "pbv",
+        "sportage",
+        "suv"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "삼성바이오로직스",
+      "tickers": [
+        "207940"
+      ],
+      "aliases": [
+        "samsung biologics",
+        "삼성바이오"
+      ],
+      "context": [
+        "cdmo",
+        "biopharma",
+        "mfg",
+        "capacity"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "셀트리온",
+      "tickers": [
+        "068270"
+      ],
+      "aliases": [
+        "celltrion",
+        "셀트리온"
+      ],
+      "context": [
+        "biosimilar",
+        "cdmo",
+        "infliximab",
+        "truxima"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "네이버",
+      "tickers": [
+        "035420"
+      ],
+      "aliases": [
+        "naver",
+        "네이버"
+      ],
+      "context": [
+        "search",
+        "line",
+        "webtoon",
+        "cloud",
+        "ai"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "카카오",
+      "tickers": [
+        "035720"
+      ],
+      "aliases": [
+        "kakao",
+        "카카오"
+      ],
+      "context": [
+        "kakaotalk",
+        "mobility",
+        "bank",
+        "pay",
+        "games"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "포스코홀딩스",
+      "tickers": [
+        "005490"
+      ],
+      "aliases": [
+        "posco holdings",
+        "포스코"
+      ],
+      "context": [
+        "steel",
+        "battery materials",
+        "lithium",
+        "nickel"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "포스코퓨처엠",
+      "tickers": [
+        "003670"
+      ],
+      "aliases": [
+        "posco future m",
+        "포스코퓨처엠",
+        "posco chemical"
+      ],
+      "context": [
+        "cathode",
+        "anode",
+        "battery materials"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "LG전자",
+      "tickers": [
+        "066570"
+      ],
+      "aliases": [
+        "lg electronics",
+        "lg전자"
+      ],
+      "context": [
+        "tv",
+        "appliances",
+        "home entertainment",
+        "vehicle components"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "SK텔레콤",
+      "tickers": [
+        "017670"
+      ],
+      "aliases": [
+        "sk telecom",
+        "sk텔레콤",
+        "skt"
+      ],
+      "context": [
+        "5g",
+        "ai",
+        "infra",
+        "ict"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "KT",
+      "tickers": [
+        "030200"
+      ],
+      "aliases": [
+        "kt",
+        "korea telecom"
+      ],
+      "context": [
+        "5g",
+        "broadband",
+        "ai datacenter"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "LG유플러스",
+      "tickers": [
+        "032640"
+      ],
+      "aliases": [
+        "lg uplus",
+        "lg유플러스",
+        "lgu+"
+      ],
+      "context": [
+        "5g",
+        "mvno",
+        "broadband"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "삼성전기",
+      "tickers": [
+        "009150"
+      ],
+      "aliases": [
+        "samsung electro-mechanics",
+        "삼성전기"
+      ],
+      "context": [
+        "mlcc",
+        "camera module",
+        "substrate"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "현대모비스",
+      "tickers": [
+        "012330"
+      ],
+      "aliases": [
+        "hyundai mobis",
+        "현대모비스"
+      ],
+      "context": [
+        "modules",
+        "autoparts",
+        "lamp",
+        "electronics"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "두산에너빌리티",
+      "tickers": [
+        "034020"
+      ],
+      "aliases": [
+        "doosan energetics",
+        "doosan",
+        "두산에너빌리티",
+        "두산중공업"
+      ],
+      "context": [
+        "turbine",
+        "nuclear",
+        "power plant",
+        "wind"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "HMM",
+      "tickers": [
+        "011200"
+      ],
+      "aliases": [
+        "hmm",
+        "현대상선"
+      ],
+      "context": [
+        "container shipping",
+        "freight",
+        "ports"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "한화에어로스페이스",
+      "tickers": [
+        "012450"
+      ],
+      "aliases": [
+        "hanwha aerospace",
+        "한화에어로스페이스"
+      ],
+      "context": [
+        "defense",
+        "missile",
+        "engine",
+        "space"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "한화솔루션",
+      "tickers": [
+        "009830"
+      ],
+      "aliases": [
+        "hanwha solutions",
+        "한화솔루션"
+      ],
+      "context": [
+        "solar",
+        "qcells",
+        "chemicals"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "S-Oil",
+      "tickers": [
+        "010950"
+      ],
+      "aliases": [
+        "s-oil",
+        "s oil",
+        "에쓰오일"
+      ],
+      "context": [
+        "refinery",
+        "petrochemical"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "롯데케미칼",
+      "tickers": [
+        "011170"
+      ],
+      "aliases": [
+        "lotte chemical",
+        "롯데케미칼"
+      ],
+      "context": [
+        "petrochemical",
+        "ncc"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "CJ제일제당",
+      "tickers": [
+        "097950"
+      ],
+      "aliases": [
+        "cj cheiljedang",
+        "cj제일제당"
+      ],
+      "context": [
+        "food",
+        "bio",
+        "amino acids",
+        "frozen"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "아모레퍼시픽",
+      "tickers": [
+        "090430"
+      ],
+      "aliases": [
+        "amorepacific",
+        "아모레퍼시픽"
+      ],
+      "context": [
+        "cosmetics",
+        "skincare",
+        "beauty"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "카카오뱅크",
+      "tickers": [
+        "323410"
+      ],
+      "aliases": [
+        "kakaobank",
+        "카카오뱅크"
+      ],
+      "context": [
+        "internet bank",
+        "mobile bank",
+        "deposit",
+        "loan"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "카카오페이",
+      "tickers": [
+        "377300"
+      ],
+      "aliases": [
+        "kakaopay",
+        "카카오페이"
+      ],
+      "context": [
+        "payments",
+        "wallet",
+        "qr"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "크래프톤",
+      "tickers": [
+        "259960"
+      ],
+      "aliases": [
+        "krafton",
+        "크래프톤"
+      ],
+      "context": [
+        "pubg",
+        "game",
+        "studio"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "엔씨소프트",
+      "tickers": [
+        "036570"
+      ],
+      "aliases": [
+        "ncsoft",
+        "엔씨소프트",
+        "nc"
+      ],
+      "context": [
+        "lineage",
+        "mmorpg",
+        "game"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "펄어비스",
+      "tickers": [
+        "263750"
+      ],
+      "aliases": [
+        "pearl abyss",
+        "펄어비스"
+      ],
+      "context": [
+        "black desert",
+        "game"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "HD현대",
+      "tickers": [
+        "267250"
+      ],
+      "aliases": [
+        "hd hyundai",
+        "hd현대"
+      ],
+      "context": [
+        "shipbuilding",
+        "marine",
+        "energy"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "HD한국조선해양",
+      "tickers": [
+        "009540"
+      ],
+      "aliases": [
+        "ksoe",
+        "한국조선해양"
+      ],
+      "context": [
+        "shipbuilding",
+        "lng",
+        "offshore"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "SK이노베이션",
+      "tickers": [
+        "096770"
+      ],
+      "aliases": [
+        "sk innovation",
+        "sk이노베이션"
+      ],
+      "context": [
+        "refinery",
+        "battery",
+        "materials"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "삼성물산",
+      "tickers": [
+        "028260"
+      ],
+      "aliases": [
+        "samsung c&t",
+        "삼성물산"
+      ],
+      "context": [
+        "construction",
+        "trading",
+        "fashion",
+        "biologics stake"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "삼성생명",
+      "tickers": [
+        "032830"
+      ],
+      "aliases": [
+        "samsung life insurance",
+        "삼성생명"
+      ],
+      "context": [
+        "insurance",
+        "life",
+        "finance"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "신한지주",
+      "tickers": [
+        "055550"
+      ],
+      "aliases": [
+        "shinhan financial group",
+        "신한지주"
+      ],
+      "context": [
+        "banking",
+        "cards",
+        "finance"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "KB금융",
+      "tickers": [
+        "105560"
+      ],
+      "aliases": [
+        "kb financial group",
+        "kb금융"
+      ],
+      "context": [
+        "banking",
+        "cards",
+        "finance"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "우리금융지주",
+      "tickers": [
+        "316140"
+      ],
+      "aliases": [
+        "woori financial group",
+        "우리금융지주"
+      ],
+      "context": [
+        "banking",
+        "finance"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "LG디스플레이",
+      "tickers": [
+        "034220"
+      ],
+      "aliases": [
+        "lg display",
+        "lg디스플레이"
+      ],
+      "context": [
+        "oled",
+        "lcd",
+        "panel"
+      ],
+      "negative": []
+    },
+    {
+      "country": "KR",
+      "name": "한온시스템",
+      "tickers": [
+        "018880"
+      ],
+      "aliases": [
+        "hanon systems",
+        "한온시스템"
+      ],
+      "context": [
+        "thermal",
+        "auto parts",
+        "hvac"
+      ],
+      "negative": []
+    }
+  ]
+}

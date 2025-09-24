@@ -1,0 +1,908 @@
+# server.py — 최적화된 RSS → 요약 → 카테고리/감성/점수 → 회사매칭 → 카드 JSON
+import os
+import re
+import math
+import json
+import logging
+import asyncio
+import hashlib
+import time
+from datetime import datetime, timezone, timedelta
+from typing import List, Dict, Optional, Set, Tuple, Any
+from urllib.parse import urlparse, quote_plus
+
+from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
+import requests
+import feedparser
+
+from modules.translate.libre import translate
+from api.storage.pg import connect_db, disconnect_db, init_db, fetch, fetchrow, execute # <--- ADD THIS LINE
+
+# 간단한 TTL 캐시 구현 (cachetools 대체)
+class SimpleCache:
+    def __init__(self, max_size: int = 1000, ttl: int = 300):
+        self.cache = {}
+        self.timestamps = {}
+        self.max_size = max_size
+        self.ttl = ttl
+    
+    def get(self, key: str, default=None):
+        if key in self.cache:
+            if time.time() - self.timestamps[key] < self.ttl:
+                return self.cache[key]
+            else:
+                # 만료된 항목 제거
+                del self.cache[key]
+                del self.timestamps[key]
+        return default
+    
+    def set(self, key: str, value: Any):
+        # 캐시 크기 제한
+        if len(self.cache) >= self.max_size:
+            # 가장 오래된 항목 제거
+            oldest_key = min(self.timestamps.keys(), key=lambda k: self.timestamps[k])
+            del self.cache[oldest_key]
+            del self.timestamps[oldest_key]
+        
+        self.cache[key] = value
+        self.timestamps[key] = time.time()
+    
+    def __contains__(self, key: str) -> bool:
+        return self.get(key) is not None
+    
+    def __len__(self) -> int:
+        return len(self.cache)
+    
+    def clear(self):
+        self.cache.clear()
+        self.timestamps.clear()
+
+# ---------------------- 설정 및 상수 ----------------------
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+WEB_DIR = os.path.join(BASE_DIR, "web")
+DATA_DIR = os.path.join(BASE_DIR, "data")
+
+# 환경변수로 설정 가능하도록 개선
+USE_SAMPLE = os.getenv("USE_SAMPLE", "false").lower() == "true"
+REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", "8"))
+MAX_CONCURRENT_REQUESTS = int(os.getenv("MAX_CONCURRENT_REQUESTS", "5"))
+CACHE_TTL = int(os.getenv("CACHE_TTL", "300"))  # 5분
+
+# RSS 피드 설정
+RSS_LIST = [
+    "https://techcrunch.com/feed/",
+    "https://feeds.arstechnica.com/arstechnica/technology-lab",
+    "https://www.theverge.com/rss/index.xml",
+    "https://www.engadget.com/rss.xml",
+]
+
+# 필터링 설정
+MIN_CONFIDENCE_DISPLAY = float(os.getenv("MIN_CONFIDENCE_DISPLAY", "0.6"))
+REQUIRE_COMPANY_MATCH = os.getenv("REQUIRE_COMPANY_MATCH", "true").lower() == "true"
+MIN_SCORE = int(os.getenv("MIN_SCORE", "55"))
+ALLOWED_CATEGORIES = {
+    "financials", "corporate_action", "regulation",
+    "product", "supply_chain", "competition", "general"
+}
+MIN_ITEMS_TARGET = int(os.getenv("MIN_ITEMS_TARGET", "8"))
+MAX_ITEMS_PER_FEED = int(os.getenv("MAX_ITEMS_PER_FEED", "20"))
+
+# 명세서의 룰 사전 (H-1)
+SOURCE_TRUST = {
+    "sec.gov": 0.98, "ec.europa.eu": 0.96, "justice.gov": 0.95, "reuters.com": 0.94,
+    "bloomberg.com": 0.94, "ft.com": 0.90, "wsj.com": 0.90, "cnbc.com": 0.88,
+    "investor.nvidia.com": 0.90, "nvidia.com": 0.88, "techcrunch.com": 0.78,
+    "theverge.com": 0.75, "engadget.com": 0.70, "unknown": 0.60
+}
+
+IMPACT_HINT = {
+    0.30: ["ban","recall","data breach","antitrust probe","guidance cut","downgrade","plant halt","export ban"],
+    0.20: ["merger","acquisition","IPO","major partnership","export control","sanction"],
+    0.15: ["lawsuit","investigation","shipment delay","supply shortage","production issue"]
+}
+
+CATEGORY_WEIGHT = {
+    "financials": 1.0, "corporate_action": 0.95, "regulation": 0.90, "supply_chain": 0.80,
+    "product": 0.65, "competition": 0.55, "general": 0.40
+}
+
+# 전역 캐시
+feed_cache = SimpleCache(max_size=1000, ttl=CACHE_TTL)
+company_db_cache = SimpleCache(max_size=1, ttl=1800)  # 30분
+watchlist_cache = SimpleCache(max_size=1, ttl=1800)   # 30분
+
+# ---------------------- 유틸리티 함수 ----------------------
+async def load_watchlist(path: Optional[str] = None) -> Set[str]:
+    """워치리스트를 캐시와 함께 로드"""
+    if path is None:
+        path = os.path.join(DATA_DIR, "datawatchlist.txt")
+    
+    # 캐시 확인
+    cache_key = f"watchlist_{path}"
+    cached = watchlist_cache.get(cache_key)
+    if cached is not None:
+        return cached
+    
+    watchlist = set()
+    try:
+        # DB에서 워치리스트 로드
+        # 현재는 user_id가 없으므로 임시로 'test@example.com' 사용
+        user = await fetchrow("SELECT id FROM users WHERE email = $1", 'test@example.com')
+        if user:
+            rows = await fetch("SELECT c.name FROM user_watchlist uw JOIN companies c ON uw.company_id = c.id WHERE uw.user_id = $1", user['id'])
+            for row in rows:
+                watchlist.add(row['name'].upper())
+            logger.info(f"DB에서 워치리스트 {len(watchlist)}개 기업 로드.")
+        else:
+            logger.warning("테스트 사용자(test@example.com)를 찾을 수 없습니다. 워치리스트 로드 실패.")
+    except Exception as e:
+        logger.error(f"워치리스트 로드 실패: {e}")
+    
+    watchlist_cache.set(cache_key, watchlist)
+    return watchlist
+
+async def load_company_db(path: Optional[str] = None) -> List[Dict]:
+    """회사 DB를 캐시와 함께 로드"""
+    if path is None:
+        path = os.path.join(DATA_DIR, "companies_context.json")
+    
+    # 캐시 확인
+    cache_key = f"company_db_{path}"
+    cached = company_db_cache.get(cache_key)
+    if cached is not None:
+        return cached
+    
+    company_db = []
+    try:
+        # DB에서 회사 DB 로드
+        rows = await fetch("SELECT id, name, tickers, aliases, context, negative, country FROM companies")
+        for row in rows:
+            company_db.append({
+                "id": row['id'],
+                "name": row['name'],
+                "tickers": row['tickers'],
+                "aliases": row['aliases'],
+                "context": row['context'],
+                "negative": row['negative'],
+                "country": row['country']
+            })
+        logger.info(f"DB에서 회사 DB {len(company_db)}개 항목 로드.")
+    except Exception as e:
+        logger.error(f"회사 DB 로드 실패: {e}")
+    
+    company_db_cache.set(cache_key, company_db)
+    return company_db
+
+def build_dynamic_feeds_from_watchlist(watchlist: Set[str], max_companies: int = 8) -> List[str]:
+    """워치리스트 기반 동적 피드 생성"""
+    feeds = []
+    if watchlist:
+        for name in list(watchlist)[:max_companies]:
+            feeds.append(gnews_rss_for(name))
+    return feeds
+
+def gnews_rss_for(query: str, lang: str = "en", region: str = "US") -> str:
+    """Google News RSS URL 생성"""
+    q = quote_plus(f'"{query}"')
+    return f"https://news.google.com/rss/search?q={q}&hl={lang}&gl={region}&ceid={region}:{lang}"
+
+def pick_source(url: str) -> str:
+    """URL에서 소스 도메인 추출"""
+    try:
+        parsed = urlparse(url)
+        return parsed.hostname or "unknown"
+    except Exception:
+        return "unknown"
+
+def create_article_id(url: str) -> int:
+    """URL 기반으로 일관된 article_id 생성"""
+    return abs(hash(hashlib.md5(url.encode()).hexdigest())) % (10**9)
+
+# ---------------------- 텍스트 처리 함수 ----------------------
+TAG_RE = re.compile(r"<[^>]+>")
+WHITESPACE_RE = re.compile(r"\s+")
+
+def strip_html(text: str) -> str:
+    """HTML 태그 제거 및 텍스트 정규화"""
+    if not text:
+        return ""
+    clean_text = TAG_RE.sub("", text)
+    return WHITESPACE_RE.sub(" ", clean_text).strip()
+
+def summarize_en(text: str, max_sentences: int = 2) -> str:
+    """향상된 추출 요약 알고리즘"""
+    if not text:
+        return ""
+    
+    text = WHITESPACE_RE.sub(" ", text.strip())
+    if len(text) < 100:
+        return text[:280]
+    
+    # 문장 분리 (개선된 정규표현식)
+    sentences = re.split(r'(?<=[.!?])\s+(?=[A-Z])', text)
+    sentences = [s.strip() for s in sentences if 20 <= len(s) <= 300]
+    
+    if not sentences:
+        return text[:280]
+    
+    if len(sentences) <= max_sentences:
+        return " ".join(sentences)
+    
+    # 점수 기반 문장 선택
+    scored_sentences = []
+    for sentence in sentences:
+        words = re.findall(r'\b[a-zA-Z]{3,}\b', sentence.lower())
+        if not words:
+            continue
+        
+        # 점수 계산: 고유 단어 수, 길이 최적화, 키워드 가중치
+        unique_words = len(set(words))
+        length_score = 1 / (1 + abs(len(sentence) - 120) / 50)
+        keyword_score = sum(1 for word in words if word in {
+            'revenue', 'profit', 'earnings', 'growth', 'launch', 'acquisition',
+            'partnership', 'investment', 'market', 'technology', 'development'
+        })
+        
+        total_score = unique_words * length_score + keyword_score * 0.5
+        scored_sentences.append((total_score, sentence))
+    
+    # 상위 문장 선택
+    top_sentences = sorted(scored_sentences, key=lambda x: x[0], reverse=True)
+    selected = [s for _, s in top_sentences[:max_sentences]]
+    
+    return " ".join(selected)
+
+def detect_category(text: str) -> str:
+    """향상된 카테고리 분류"""
+    if not text:
+        return "general"
+    
+    text_lower = text.lower()
+    
+    # 카테고리별 키워드 패턴 (가중치 포함)
+    category_patterns = {
+        "financials": [
+            (r'\b(earnings|revenue|profit|loss|guidance|quarter|q[1-4]|ebitda|margin)\b', 3),
+            (r'\b(beat|miss|forecast|outlook|financial|results)\b', 2),
+            (r'\b(billion|million|percent|\$[\d,]+)\b', 1)
+        ],
+        "corporate_action": [
+            (r'\b(merger|acquisition|acquires?|buyout|m&a|ipo|spin-?off)\b', 3),
+            (r'\b(deal|transaction|purchase|stake|investment)\b', 2),
+            (r'\b(shareholder|stockholder|board|executive)\b', 1)
+        ],
+        "regulation": [
+            (r'\b(regulation|regulatory|ban|banned|approval|approved|license)\b', 3),
+            (r'\b(antitrust|probe|investigation|lawsuit|court|legal)\b', 2),
+            (r'\b(compliance|policy|government|authority)\b', 1)
+        ],
+        "supply_chain": [
+            (r'\b(supply|shortage|recall|factory|manufacturing|production)\b', 3),
+            (r'\b(shipment|delivery|logistics|inventory|raw materials)\b', 2),
+            (r'\b(delay|disruption|capacity|facility)\b', 1)
+        ],
+        "product": [
+            (r'\b(launch|launches|unveil|product|feature|update|release)\b', 3),
+            (r'\b(innovation|technology|patent|development|version)\b', 2),
+            (r'\b(market|consumer|customer|user)\b', 1)
+        ],
+        "competition": [
+            (r'\b(competitor|competition|rival|market share|competitive)\b', 3),
+            (r'\b(challenge|threat|opportunity|advantage)\b', 2),
+            (r'\b(industry|sector|segment)\b', 1)
+        ]
+    }
+    
+    # 각 카테고리별 점수 계산
+    category_scores = {}
+    for category, patterns in category_patterns.items():
+        score = 0
+        for pattern, weight in patterns:
+            matches = len(re.findall(pattern, text_lower))
+            score += matches * weight
+        category_scores[category] = score
+    
+    # 최고 점수 카테고리 반환
+    if category_scores:
+        best_category = max(category_scores, key=category_scores.get)
+        if category_scores[best_category] > 0:
+            return best_category
+    
+    return "general"
+
+def sentiment_score(text: str) -> float:
+    """향상된 감성 분석"""
+    if not text:
+        return 0.0
+    
+    text_lower = text.lower()
+    
+    # 강한 긍정/부정 키워드 (가중치 2)
+    strong_positive = ["surge", "soar", "breakthrough", "record-breaking", "outstanding"]
+    strong_negative = ["plunge", "crash", "disaster", "bankruptcy", "scandal"]
+    
+    # 일반 긍정/부정 키워드 (가중치 1)
+    positive_words = [
+        "growth", "profit", "beat", "strong", "success", "partnership",
+        "expansion", "innovation", "approval", "upgrade", "optimistic"
+    ]
+    negative_words = [
+        "loss", "decline", "miss", "weak", "failure", "lawsuit",
+        "recall", "downgrade", "concern", "risk", "problem"
+    ]
+    
+    # 점수 계산
+    pos_score = sum(2 for word in strong_positive if word in text_lower)
+    pos_score += sum(1 for word in positive_words if word in text_lower)
+    
+    neg_score = sum(2 for word in strong_negative if word in text_lower)
+    neg_score += sum(1 for word in negative_words if word in text_lower)
+    
+    if pos_score == 0 and neg_score == 0:
+        return 0.0
+    
+    total_score = pos_score - neg_score
+    max_possible = max(pos_score + neg_score, 1)
+    normalized_score = total_score / max_possible
+    
+    return max(-1.0, min(1.0, round(normalized_score * 0.8, 2)))
+
+def insight_ko(category: str, sentiment: float) -> str:
+    """한국어 인사이트 생성"""
+    sentiment_text = "긍정적" if sentiment > 0.1 else "부정적" if sentiment < -0.1 else "중립적"
+    
+    insights = {
+        "financials": f"💡 실적/재무 관련 - {sentiment_text} 시그널",
+        "corporate_action": f"💡 기업 활동 - 구조적 변화 예상",
+        "regulation": f"💡 규제/승인 - {sentiment_text} 영향 전망",
+        "supply_chain": f"💡 공급망 - 운영 효율성 관련",
+        "product": f"💡 제품/기술 - 시장 반응 모니터링",
+        "competition": f"💡 경쟁 환경 - 시장 점유율 변동 가능",
+        "general": f"💡 일반 - {sentiment_text} 모멘텀"
+    }
+    
+    return insights.get(category, f"💡 일반 - {sentiment_text} 모멘텀")
+
+def invest_score(category: str, sentiment: float, published_at: str) -> int:
+    """투자 점수 계산"""
+    # 카테고리별 가중치
+    category_weights = {
+        "financials": 1.0,
+        "corporate_action": 0.95,
+        "regulation": 0.85,
+        "supply_chain": 0.75,
+        "product": 0.65,
+        "competition": 0.55,
+        "general": 0.4
+    }
+    
+    try:
+        pub_time = datetime.fromisoformat(published_at.replace("Z", ""))
+        if pub_time.tzinfo is None:
+            pub_time = pub_time.replace(tzinfo=timezone.utc)
+    except Exception:
+        pub_time = datetime.now(timezone.utc)
+    
+    # 시간 가중치 (최근일수록 높은 점수)
+    hours_ago = (datetime.now(timezone.utc) - pub_time).total_seconds() / 3600
+    recency_weight = math.exp(-hours_ago / 48.0)  # 48시간 반감기
+    
+    # 기본 점수 계산
+    base_score = 50
+    category_bonus = category_weights.get(category, 0.4) * 25
+    sentiment_bonus = abs(sentiment) * 20
+    recency_bonus = recency_weight * 15
+    
+    total_score = base_score + category_bonus + sentiment_bonus + recency_bonus
+    
+    return max(0, min(100, int(round(total_score))))
+
+# ---------------------- 회사 매칭 함수 ----------------------
+def count_occurrences(text: str, phrase: str) -> int:
+    """단어 경계를 고려한 구문 출현 횟수 계산"""
+    if not text or not phrase:
+        return 0
+    
+    pattern = re.escape(phrase.lower())
+    boundary_pattern = rf'\b{pattern}\b'
+    
+    try:
+        return len(re.findall(boundary_pattern, text.lower()))
+    except re.error:
+        # 정규표현식 오류 시 단순 검색
+        return text.lower().count(phrase.lower())
+
+def detect_companies_from_db(title: str, body: str, company_db: List[Dict]) -> List[Dict]:
+    """회사 DB 기반 엔티티 매칭"""
+    if not company_db:
+        return []
+    
+    results = []
+    full_text = f"{title} {body}".lower()
+    
+    for company in company_db:
+        name = company.get("name", "")
+        tickers = company.get("tickers", [])
+        aliases = company.get("aliases", [])
+        context = company.get("context", [])
+        negative = company.get("negative", [])
+        
+        score = 0.0
+        matched_term = ""
+        
+        # 티커 매칭 (최고 우선순위)
+        ticker_hits = 0
+        for ticker in tickers:
+            hits = count_occurrences(full_text, ticker)
+            if hits > 0:
+                ticker_hits += hits
+                if not matched_term:
+                    matched_term = ticker
+        
+        if ticker_hits > 0:
+            score += 6.0  # 티커는 높은 점수
+        
+        # 별칭 매칭
+        alias_total = 0
+        alias_in_title = 0
+        for alias in aliases:
+            total_hits = count_occurrences(full_text, alias)
+            title_hits = count_occurrences(title.lower(), alias)
+            
+            alias_total += total_hits
+            alias_in_title += title_hits
+            
+            if total_hits > 0 and not matched_term:
+                matched_term = alias
+        
+        if alias_total > 0:
+            score += 3.0
+        if alias_in_title > 0:
+            score += 2.0  # 제목에 나온 경우 추가 점수
+        
+        # 컨텍스트 키워드
+        context_hits = sum(count_occurrences(full_text, word) for word in context)
+        score += min(2.0, context_hits * 0.3)
+        
+        # 부정 키워드 감점
+        negative_hits = sum(count_occurrences(full_text, word) for word in negative)
+        score -= negative_hits * 1.5
+        
+        # 유효성 검사
+        is_valid = (
+            ticker_hits > 0 or
+            alias_in_title > 0 or
+            alias_total >= 2 or
+            (alias_total >= 1 and context_hits >= 2)
+        )
+        
+        if not is_valid:
+            continue
+        
+        # 신뢰도 계산
+        confidence = max(0.05, min(1.0, score / 10.0))
+        
+        if confidence >= MIN_CONFIDENCE_DISPLAY:
+            results.append({
+                "name": name,
+                "confidence": round(confidence, 2),
+                "matched": matched_term,
+                "country": company.get("country", "")
+            })
+    
+    return sorted(results, key=lambda x: x["confidence"], reverse=True)
+
+# ---------------------- RSS 처리 함수 ----------------------
+def fetch_rss(url: str):
+    """동기 RSS 피드 가져오기 (기존 코드와 호환)"""
+    try:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (NewsMonitor/2.0) AppleWebKit/537.36'
+        }
+        response = requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
+        response.raise_for_status()
+        return feedparser.parse(response.content)
+    except Exception as e:
+        logger.warning(f"RSS 피드 가져오기 실패 {url}: {e}")
+        return None
+
+def company_allowed(matches: List[Dict], watchlist: Set[str]) -> bool:
+    """회사 매칭이 워치리스트에 허용되는지 확인"""
+    if not REQUIRE_COMPANY_MATCH:
+        return True
+    
+    if not matches:
+        return False
+    
+    if not watchlist:  # 워치리스트가 비어있으면 매칭만 있으면 허용
+        return True
+    
+    return any(
+        match["name"].upper() in watchlist and match["confidence"] >= MIN_CONFIDENCE_DISPLAY
+        for match in matches
+    )
+
+def passes_filters(item: Dict, require_match: bool = True, min_score: int = MIN_SCORE, 
+                  allowed_categories: Set[str] = ALLOWED_CATEGORIES) -> bool:
+    """뉴스 아이템이 필터를 통과하는지 확인"""
+    if require_match and not item.get("companies"):
+        return False
+    
+    if min_score and item.get("score", 0) < min_score:
+        return False
+    
+    if allowed_categories and item.get("category") not in allowed_categories:
+        return False
+    
+    return True
+
+def sample_items() -> List[Dict]:
+    """샘플 뉴스 아이템 생성"""
+    now = datetime.now(timezone.utc).isoformat()
+    return [
+        {
+            "article_id": 1,
+            "title": "📰 샘플: 외부 RSS 응답 지연 시 표시됩니다",
+            "source": "local",
+            "published_at": now,
+            "ko_short": "네트워크/방화벽/피드 지연으로 임시 샘플을 노출합니다.",
+            "ko_insight": "💡 환경 확인 후 정상화되면 자동으로 실기사로 대체됩니다.",
+            "score": 40,
+            "sentiment": 0.0,
+            "category": "general",
+            "company_name": "",
+            "companies": [],
+            "url": "#",
+        }
+    ]
+
+# ---------------------- FastAPI 설정 ----------------------
+app = FastAPI(
+    title="NewsMonitor API",
+    description="AI 기반 기업 뉴스 모니터링 시스템",
+    version="2.0.0"
+)
+
+# 미들웨어 설정
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+@app.on_event("startup")
+async def startup_event():
+    print("Application startup...")
+    await connect_db()
+    # 개발 환경에서만 스키마 적용 및 초기 데이터 삽입
+    if os.getenv("APP_ENV", "development") == "development":
+        await init_db()
+    print("Database connected and initialized.")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    print("Application shutdown...")
+    await disconnect_db()
+    print("Database disconnected.")
+
+# 정적 파일 서빙
+app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
+
+# ---------------------- 라우트 ----------------------
+@app.get("/")
+def home():
+    """홈페이지 반환"""
+    return FileResponse(os.path.join(WEB_DIR, "index.html"))
+
+@app.get("/health")
+def health_check():
+    """헬스 체크 엔드포인트"""
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "version": "2.0.0"
+    }
+
+@app.post("/admin/reload_companies")
+def reload_companies():
+    """회사 DB 재로딩"""
+    try:
+        company_db_cache.clear()
+        company_db = load_company_db()
+        return {
+            "success": True,
+            "count": len(company_db),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as e:
+        logger.error(f"회사 DB 재로딩 실패: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/admin/reload_watchlist")
+def reload_watchlist():
+    """워치리스트 재로딩"""
+    try:
+        watchlist_cache.clear()
+        watchlist = load_watchlist()
+        return {
+            "success": True,
+            "count": len(watchlist),
+            "companies": list(watchlist)[:10],  # 처음 10개만 표시
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as e:
+        logger.error(f"워치리스트 재로딩 실패: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/feed")
+async def get_feed(limit: int = 20):
+    """메인 뉴스 피드 엔드포인트"""
+    try:
+        # 캐시 확인
+        cache_key = f"feed_{limit}"
+        cached_result = feed_cache.get(cache_key)
+        if cached_result is not None:
+            logger.info(f"캐시에서 피드 반환: {len(cached_result)} 아이템")
+            return cached_result[:limit]
+        
+        if USE_SAMPLE:
+            logger.info("샘플 모드 활성화")
+            return sample_items()[:limit]
+        
+        # 데이터 로드
+        watchlist = await load_watchlist()
+        company_db = await load_company_db()
+        
+        # RSS 피드 수집
+        all_feeds = list(RSS_LIST) + build_dynamic_feeds_from_watchlist(watchlist)
+        logger.info(f"{len(all_feeds)}개 RSS 피드 처리 시작")
+        
+        candidates = []
+        seen_urls = set()
+        
+        # RSS 피드 처리 (동기식, 기존 코드와 호환)
+        for feed_url in all_feeds:
+            try:
+                feed_data = fetch_rss(feed_url)
+                if not feed_data:
+                    continue
+                
+                # 피드 엔트리 처리
+                for entry in feed_data.entries[:MAX_ITEMS_PER_FEED]:
+                    try:
+                        title = entry.get("title", "")
+                        link = entry.get("link", "#")
+                        
+                        if not link or link in seen_urls:
+                            continue
+                        seen_urls.add(link)
+                        
+                        # 발행 시간 처리
+                        pub_time = getattr(entry, "published_parsed", None) or getattr(entry, "updated_parsed", None)
+                        if pub_time:
+                            published_at = datetime(*pub_time[:6], tzinfo=timezone.utc).isoformat()
+                        else:
+                            published_at = datetime.now(timezone.utc).isoformat()
+                        
+                        # 본문 추출
+                        desc_raw = entry.get("summary", "") or entry.get("description", "")
+                        desc = strip_html(desc_raw)
+                        full_text = f"{title}. {desc}".strip()
+                        
+                        # AI 분석
+                        matches = detect_companies_from_db(title, desc, company_db)
+                        top_company = matches[0]["name"] if matches else ""
+                        
+                        summary = summarize_en(desc or title, max_sentences=2)
+                        
+                        # Translate the English summary to Korean
+                        korean_summary = summary
+                        if summary:
+                            korean_summary = translate(summary, source='en', target='ko')
+
+                        category = detect_category(full_text)
+                        sentiment = sentiment_score(full_text)
+                        insight = insight_ko(category, sentiment)
+                        score = invest_score(category, sentiment, published_at)
+                        
+                        # 뉴스 아이템 생성
+                        news_item = {
+                            "article_id": create_article_id(link),
+                            "title": title,
+                            "source": pick_source(link),
+                            "published_at": published_at,
+                            "ko_short": korean_summary, # USE korean_summary HERE
+                            "ko_insight": insight,
+                            "score": score,
+                            "sentiment": sentiment,
+                            "category": category,
+                            "company_name": top_company,
+                            "companies": matches,
+                            "url": link,
+                        }
+                        
+                        candidates.append(news_item)
+                        
+                    except Exception as e:
+                        logger.warning(f"뉴스 아이템 처리 실패: {e}")
+                        continue
+                        
+            except Exception as e:
+                logger.warning(f"RSS 피드 처리 실패 {feed_url}: {e}")
+                continue
+        
+        logger.info(f"총 {len(candidates)}개 후보 뉴스 수집 완료")
+        
+        # 1차 필터링: 엄격한 기준
+        strict_filtered = [
+            item for item in candidates 
+            if passes_filters(item, require_match=True, min_score=MIN_SCORE, 
+                            allowed_categories=ALLOWED_CATEGORIES) 
+            and company_allowed(item.get("companies", []), watchlist)
+        ]
+        
+        # 2차 필터링: 결과가 부족할 경우 완화된 기준 적용
+        if len(strict_filtered) < MIN_ITEMS_TARGET:
+            logger.info(f"1차 필터링 결과 부족 ({len(strict_filtered)}개), 2차 필터링 적용")
+            relaxed_filtered = [
+                item for item in candidates 
+                if passes_filters(item, require_match=False, min_score=min(45, MIN_SCORE), 
+                                allowed_categories=None)
+            ]
+            
+            # 중복 제거 후 결합
+            seen_ids = {item["article_id"] for item in strict_filtered}
+            additional_items = [
+                item for item in relaxed_filtered 
+                if item["article_id"] not in seen_ids
+            ]
+            
+            final_results = strict_filtered + additional_items
+        else:
+            final_results = strict_filtered
+        
+        # 정렬: 최신순, 동일 시간일 경우 점수순
+        final_results.sort(key=lambda x: (x["published_at"], x["score"]), reverse=True)
+        
+        # 결과 제한
+        limited_results = final_results[:limit]
+        
+        # 캐시에 저장
+        feed_cache.set(cache_key, limited_results)
+        
+        # 빈 결과일 경우 샘플 반환
+        if not limited_results:
+            logger.warning("필터링 후 결과가 없음, 샘플 반환")
+            return sample_items()[:limit]
+        
+        logger.info(f"최종 {len(limited_results)}개 뉴스 반환")
+        return limited_results
+        
+    except Exception as e:
+        logger.exception("뉴스 피드 처리 중 오류 발생")
+        
+        # 오류 발생 시 캐시된 결과가 있으면 반환
+        cache_key = f"feed_{limit}"
+        cached_result = feed_cache.get(cache_key)
+        if cached_result is not None:
+            logger.info("오류 발생, 캐시된 결과 반환")
+            return cached_result
+        
+        # 모든 것이 실패하면 샘플 반환
+        logger.info("모든 처리 실패, 샘플 반환")
+        return sample_items()[:limit]
+
+@app.get("/feed/categories")
+def get_categories():
+    """사용 가능한 카테고리 목록 반환"""
+    return {
+        "categories": list(ALLOWED_CATEGORIES),
+        "descriptions": {
+            "financials": "실적, 매출, 수익 관련",
+            "corporate_action": "인수합병, IPO, 구조조정",
+            "regulation": "규제, 승인, 법적 이슈",
+            "product": "제품 출시, 기술 개발",
+            "supply_chain": "공급망, 생산, 리콜",
+            "competition": "경쟁, 시장 점유율",
+            "general": "일반 뉴스"
+        }
+    }
+
+@app.get("/feed/sources")
+def get_sources():
+    """뉴스 소스 목록 반환"""
+    watchlist = load_watchlist()
+    
+    return {
+        "rss_feeds": RSS_LIST,
+        "dynamic_feeds_count": len(build_dynamic_feeds_from_watchlist(watchlist)),
+        "watchlist_companies": len(watchlist)
+    }
+
+@app.get("/admin/stats")
+def get_stats():
+    """시스템 통계 반환"""
+    watchlist = load_watchlist()
+    company_db = load_company_db()
+    
+    return {
+        "cache_stats": {
+            "feed_cache_size": len(feed_cache),
+            "company_db_cached": len(company_db_cache),
+            "watchlist_cached": len(watchlist_cache)
+        },
+        "data_stats": {
+            "companies_in_db": len(company_db),
+            "watchlist_size": len(watchlist),
+            "rss_feeds": len(RSS_LIST)
+        },
+        "config": {
+            "min_confidence": MIN_CONFIDENCE_DISPLAY,
+            "min_score": MIN_SCORE,
+            "max_items_per_feed": MAX_ITEMS_PER_FEED,
+            "cache_ttl_seconds": CACHE_TTL,
+            "request_timeout": REQUEST_TIMEOUT
+        },
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+@app.get("/companies/search")
+def search_companies(q: str):
+    """회사 검색"""
+    if len(q.strip()) < 2:
+        return {"results": []}
+    
+    company_db = load_company_db()
+    query = q.lower().strip()
+    
+    matches = []
+    for company in company_db:
+        name = company.get("name", "").lower()
+        tickers = [t.lower() for t in company.get("tickers", [])]
+        aliases = [a.lower() for a in company.get("aliases", [])]
+        
+        score = 0
+        if query in name:
+            score += 10
+        if any(query in ticker for ticker in tickers):
+            score += 8
+        if any(query in alias for alias in aliases):
+            score += 6
+        
+        if score > 0:
+            matches.append({
+                "name": company.get("name"),
+                "tickers": company.get("tickers", []),
+                "country": company.get("country", ""),
+                "score": score
+            })
+    
+    # 점수순 정렬, 상위 10개만 반환
+    matches.sort(key=lambda x: x["score"], reverse=True)
+    return {"results": matches[:10]}
+
+if __name__ == "__main__":
+    import uvicorn
+    
+    # 개발 환경에서만 사용
+    uvicorn.run(
+        "server:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=False,  # 안정성을 위해 reload=False로 설정
+        log_level="info"
+    )
+                

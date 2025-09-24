@@ -1,0 +1,67 @@
+version: "3.8"
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-newsmon}
+      POSTGRES_USER: ${POSTGRES_USER:-newsmon}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_strong}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-newsmon} -d ${POSTGRES_DB:-newsmon}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  api:
+    build: .
+    volumes:
+      - ./:/api
+      - ../web:/web
+      - ./secrets:/secrets:ro
+    environment:
+      - APP_ENV=${APP_ENV:-dev}
+      - APP_PORT=${APP_PORT:-3000}
+      - TZ=${TZ:-Asia/Seoul}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-newsmon}
+      - POSTGRES_USER=${POSTGRES_USER:-newsmon}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-change_me_strong}
+      - REDIS_URL=redis://redis:6379/0
+      - SEC_USER_AGENT=${SEC_USER_AGENT}
+      - FINNHUB_API_KEY=${FINNHUB_API_KEY}
+      - POLYGON_API_KEY=${POLYGON_API_KEY}
+      - FRED_API_KEY=${FRED_API_KEY}
+      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}
+      - PAPAGO_CLIENT_ID=${PAPAGO_CLIENT_ID}
+      - PAPAGO_CLIENT_SECRET=${PAPAGO_CLIENT_SECRET}
+      - DEEPL_API_KEY=${DEEPL_API_KEY}
+      - ORATS_API_KEY=${ORATS_API_KEY}
+      - INTRINIO_API_KEY=${INTRINIO_API_KEY}
+      - CBOE_API_TOKEN=${CBOE_API_TOKEN}
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+      - MIN_SCORE=${MIN_SCORE:-55}
+      - REQUIRE_COMPANY_MATCH=${REQUIRE_COMPANY_MATCH:-true}
+      - MIN_CONFIDENCE_DISPLAY=${MIN_CONFIDENCE_DISPLAY:-0.6}
+      - ALERT_COOLDOWN_SEC=${ALERT_COOLDOWN_SEC:-600}
+      - QUIET_HOURS=${QUIET_HOURS:-23-06}
+      - SSE_HEARTBEAT_SEC=${SSE_HEARTBEAT_SEC:-20}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - "${APP_PORT:-3000}:3000"
+
+volumes:
+  pgdata:

@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>NewsMonitor - 대시보드</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js @4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root{
+      --bg-primary:#0a0a0a;--bg-secondary:#111111;--bg-tertiary:#151515;
+      --text-primary:#fff;--text-secondary:#a0a0a0;--text-tertiary:#6b7280;
+      --accent-primary:#3b82f6;--accent-secondary:#1d4ed8;--accent-tertiary:#60a5fa;
+      --border-primary:#222;--border-secondary:#343434;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,system-ui,Arial,sans-serif;background:radial-gradient(1000px 600px at 10% -10%,rgba(59,130,246,.15),transparent 60%), radial-gradient(1000px 600px at 90% 0,rgba(168,85,247,.12),transparent 60%), var(--bg-primary); color:var(--text-primary); line-height:1.6; overflow-x:hidden}
+    .dashboard-btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 8px;
+      background: var(--accent-primary);
+      color: var(--text-primary);
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    .dashboard-btn:hover {
+      background: var(--accent-secondary);
+    }
+
+    .tab-button {
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: color 0.2s ease, background 0.2s ease;
+    }
+    .tab-button:hover {
+      color: var(--text-primary);
+      background: rgba(255,255,255,0.05);
+    }
+    .tab-button.active {
+      background: var(--accent-primary);
+      color: var(--text-primary);
+    }
+  </style>
+</head>
+<body>
+  <div style="padding:16px;max-width:980px;margin:0 auto;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border-primary);margin-bottom:16px;">
+    <a class="logo" href="/"><span class="logo-badge"></span> NewsMonitor</a>
+  </div>
+
+<section style="padding:16px;max-width:980px;margin:0 auto;">
+  <h2>개인 탭</h2>
+
+  <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
+    <label for="company-select" style="font-weight: 600;">모니터링 기업:</label>
+    <select id="company-select" style="padding: 8px; border-radius: 6px; border: 1px solid #555; background: #333; color: white;">
+      <option value="NVIDIA">NVIDIA</option>
+      <option value="Tesla">Tesla</option>
+      <option value="Apple">Apple</option>
+    </select>
+    <button id="btn-refresh-company" class="dashboard-btn">새로고침</button>
+  </div>
+
+  <div id="alert-banner" style="display:none;background:#ffe8e8;border:1px solid #ffb3b3;padding:10px;border-radius:8px;margin-bottom:12px; color: black;">
+    <strong>긴급 알림</strong> <span id="alert-text"></span>
+  </div>
+
+  <div style="display:flex;justify-content:flex-end;gap:8px;margin:8px 16px;">
+    <button id="btn-alert-settings" class="dashboard-btn">알림 설정</button>
+  </div>
+
+  <div style="display:flex;gap:10px;margin-bottom:20px;border-bottom:1px solid #333;padding-bottom:14px;">
+    <button class="tab-button active" data-tab="feed">내 피드</button>
+    <button class="tab-button" data-tab="analysis">투자 분석</button>
+    <button class="tab-button" data-tab="market_analysis">현재 시황 분석</button>
+    <button class="tab-button" data-tab="pre_market">장 시작 전</button>
+    <button class="tab-button" data-tab="post_market">장 마감 후</button>
+    <button class="tab-button" data-tab="alerts">긴급 알림</button>
+  </div>
+
+  <div id="tab-content-feed" class="tab-content" style="display:block;">
+    <h3>최신 뉴스</h3>
+    <div id="feed"></div>
+  </div>
+
+  <div id="tab-content-analysis" class="tab-content" style="display:none;">
+    <h3>투자 분석</h3>
+    <div id="risk-cards" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div style="border:1px solid #333;border-radius:10px;padding:12px;">
+        <div style="font-weight:600;margin-bottom:6px;">옵션/공매도 리스크 (NVDA)</div>
+        <div id="risk-body" style="font-size:14px;color:#ccc;">불러오는 중...</div>
+      </div>
+      <div style="border:1px solid #333;border-radius:10px;padding:12px;">
+        <div style="font-weight:600;margin-bottom:6px;">기업 콘텍스트 레이더 (NVIDIA)</div>
+        <canvas id="ctx-radar" height="220"></canvas>
+        <div id="ctx-lists" style="font-size:12px;color:#ccc;margin-top:6px;"></div>
+      </div>
+      <div style="border:1px solid #333;border-radius:10px;padding:12px;grid-column:1/-1;">
+        <div style="font-weight:600;margin-bottom:6px;">감마 뱀 차트 (NVDA 스트라이크별 GEX)</div>
+        <canvas id="gex-snake" height="260"></canvas>
+        <div id="gex-meta" style="font-size:12px;color:#ccc;margin-top:6px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-content-market_analysis" class="tab-content" style="display:none;">
+    <h3>현재 시황 분석</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div style="border:1px solid #333;border-radius:10px;padding:12px;">
+        <div style="font-weight:600;margin-bottom:6px;">시장 리스크 (NVDA)</div>
+        <div id="market-risk-body" style="font-size:14px;color:#ccc;">불러오는 중...</div>
+      </div>
+      <div style="border:1px solid #333;border-radius:10px;padding:12px;">
+        <div style="font-weight:600;margin-bottom:6px;">감마 뱀 차트 (NVDA 스트라이크별 GEX)</div>
+        <canvas id="market-gex-snake" height="260"></canvas>
+        <div id="market-gex-meta" style="font-size:12px;color:#ccc;margin-top:6px;"></div>
+      </div>
+      <div style="border:1px solid #333;border-radius:10px;padding:12px;grid-column:1/-1;">
+        <div style="font-weight:600;margin-bottom:6px;">시장 개요</div>
+        <div id="market-overview-content" style="font-size:14px;color:#ccc;">
+          <p>전반적인 시장 동향 및 주요 지표가 여기에 표시됩니다.</p>
+          <p>이 섹션은 향후 새로운 API를 통해 동적으로 채워질 예정입니다.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-content-pre_market" class="tab-content" style="display:none;">
+    <h3>장 시작 전 분석</h3>
+    <div id="iexplain"></div>
+  </div>
+
+  <div id="tab-content-post_market" class="tab-content" style="display:none;">
+    <h3>장 마감 후 분석</h3>
+    <div id="recap"></div>
+  </div>
+
+  <div id="tab-content-alerts" class="tab-content" style="display:none;">
+    <h3>긴급 알림</h3>
+    <div id="alerts-list"></div>
+  </div>
+</section>
+
+<div id="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);"></div>
+<div id="modal-settings" style="display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:420px;background:#222;border:1px solid #555;border-radius:10px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,0.1); color: white;">
+  <div style="font-weight:700;margin-bottom:8px;">알림 설정</div>
+  <div style="font-size:12px;color:#aaa;margin-bottom:8px;">Quiet Hours, 중요도, 카테고리/심각도</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+    <label>Quiet 시작 <input type="time" id="qh-start" value="23:00" style="width:100%;"></label>
+    <label>Quiet 종료 <input type="time" id="qh-end" value="07:00" style="width:100%;"></label>
+  </div>
+  <div style="margin-bottom:10px;">
+    <label>최소 중요도(0~100) <input type="number" id="min-imp" value="70" min="0" max="100" style="width:100%;"></label>
+  </div>
+  <div style="margin-bottom:10px;">
+    카테고리<br/>
+    <label><input type="checkbox" class="cat" value="regulation" checked> 규제</label>
+    <label><input type="checkbox" class="cat" value="financials" checked> 재무</label>
+    <label><input type="checkbox" class="cat" value="supply_chain" checked> 공급망</label>
+    <label><input type="checkbox" class="cat" value="corporate_action" checked> 기업활동</label>
+  </div>
+  <div style="margin-bottom:12px;">
+    최소 심각도
+    <select id="sev-min" style="width:100%;">
+      <option value="LOW">LOW</option>
+      <option value="MEDIUM">MEDIUM</option>
+      <option value="HIGH">HIGH</option>
+    </select>
+  </div>
+  <div style="margin:10px 0;border-top:1px dashed #555;padding-top:10px;">
+    <label><input type="checkbox" id="gex-en"> 감마 0교차 근접 알림</label>
+    <div style="font-size:12px;color:#aaa;margin-left:20px;">현물 ±
+      <input type="number" id="gex-band" value="1" min="0.1" max="10" step="0.1" style="width:70px;"> %
+      구간에서 GEX 부호 전환 시 알림
+    </div>
+    <label style="display:block;margin-top:8px;"><input type="checkbox" id="mp-en"> 맥스 페인 이격 알림</label>
+    <div style="font-size:12px;color:#aaa;margin-left:20px;">현물 대비
+      <input type="number" id="mp-gap" value="3" min="1" max="20" step="0.5" style="width:70px;"> %
+      이상 이격 시 알림
+    </div>
+  </div>
+  <div style="display:flex;justify-content:flex-end;gap:8px;">
+    <button id="btn-cancel" style="padding:8px 12px;border:1px solid #555;border-radius:6px;background:#333; color: white;">취소</button>
+    <button id="btn-save" style="padding:8px 12px;border:1px solid #2684ff;border-radius:6px;background:#2684ff;color:#fff;">저장</button>
+  </div>
+</div>
+
+<script>
+(async function(){
+  const api = (p)=>fetch(p).then(r=>r.json());
+
+  function evidenceToggleHTML(related_links, tech_links){
+    const all_links = [...(related_links || []), ...(tech_links || [])];
+    if(!all_links.length) return '';
+    const list = all_links.map(u=>`<li><a href="${u}" target="_blank">${u}</a></li>`).join('');
+    return `
+      <details style="margin-top:6px;">
+        <summary style="cursor:pointer;color:#888;">증거 보기</summary>
+        <ul style="margin:6px 0 0 16px;">${list}</ul>
+      </details>`;
+  }
+
+  async function loadFeed(company_name) {
+    const data = await api(`/me/feed?company_name=${encodeURIComponent(company_name)}&min_importance=55&limit=20`);
+    const el = document.getElementById('feed');
+    el.innerHTML = (data.items||[]).map(it=>{
+      const pub = new Date(it.published_at).toLocaleString('ko-KR');
+      const severityBadge = it.severity ? `<span style="padding:2px 6px;border-radius:6px;border:1px solid ${it.severity === 'HIGH' ? '#ff6b6b' : it.severity === 'MEDIUM' ? '#feca57' : '#4ecdc4'};color:${it.severity === 'HIGH' ? '#ff6b6b' : it.severity === 'MEDIUM' ? '#feca57' : '#4ecdc4'};font-size:11px;margin-left:6px;">${it.severity}</span>` : '';
+      const importanceBar = it.importance_pct != null ? `
+        <div style="width:100%;background:#333;border-radius:4px;height:6px;margin-top:4px;">
+          <div style="width:${it.importance_pct}%;background:#3b82f6;height:100%;border-radius:4px;"></div>
+        </div>
+        <span style="font-size:11px;color:#aaa;">중요도: ${it.importance_pct}%</span>
+      ` : '';
+      const impactLevelBadge = it.impact_level ? `<span style="padding:2px 6px;border-radius:6px;border:1px solid #ddd;font-size:11px;margin-left:6px;">${it.impact_level}</span>` : '';
+      const topicTags = (it.topic_tags && it.topic_tags.length > 0) ? `<div style="font-size:11px;color:#aaa;margin-top:4px;">주제: ${it.topic_tags.join(', ')}</div>` : '';
+      const keywordSummary = (it.keyword_summary && it.keyword_summary.length > 0) ? `<div style="font-size:12px;color:#ccc;margin-top:6px;">키워드: ${it.keyword_summary.join(', ')}</div>` : '';
+      const relatedEvent = it.related_event ? `<div style="font-size:12px;color:#ccc;margin-top:6px;">사건: ${it.related_event}</div>` : '';
+      const analysisNotes = it.analysis_notes ? `<div style="font-size:12px;color:#ccc;margin-top:6px;">분석: ${it.analysis_notes}</div>` : '';
+      const watchPoints = (it.watch_points && it.watch_points.length > 0) ? `<div style="font-size:12px;color:#ccc;margin-top:6px;">관전 포인트: ${it.watch_points.join(', ')}</div>` : '';
+
+      return `<div style="border:1px solid #333;border-radius:10px;padding:12px;margin-bottom:10px;">
+        <div style="font-weight:600">${it.title}${severityBadge}${impactLevelBadge}</div>
+        ${importanceBar}
+        <div style="font-size:12px;color:#999">${it.source_domain} · ${pub}</div>
+        <div style="font-size:12px;color:#ccc">카테고리: ${it.category}</div>
+        ${topicTags}
+        <div style="font-size:14px;margin-top:8px;">${it.ko_short || it.summary || ''}</div>
+        ${keywordSummary}
+        ${relatedEvent}
+        ${analysisNotes}
+        ${watchPoints}
+        <a href="${it.canonical_url}" target="_blank" style="font-size:12px;margin-top:8px;display:inline-block;">원문보기</a>
+        ${evidenceToggleHTML(it.related_links, it.tech_links)}
+      </div>`;
+    }).join('') || '<div>데이터 없음</div>';
+  }
+
+  const today = new Date();
+  const yday = new Date(today.getTime() - 86400000);
+  const ydayStr = yday.toISOString().slice(0,10);
+
+  async function loadRecap(){
+    const res = await api(`/me/recap?ticker=NVDA&date=${ydayStr}`);
+    const el = document.getElementById('recap');
+    const list = (res.top_events||[]).map(e=>`<li>${e.title} <small>(${e.importance})</small></li>`).join('');
+    el.innerHTML = `<div style="border:1px solid #333;border-radius:10px;padding:12px;">
+      <div><strong>${res.date}</strong> 주요 사건</div>
+      <ul>${list || '<li>없음</li>'}</ul>
+      <div style="margin-top:6px;color:#ccc;">${res.yday_explain}</div>
+      <div style="margin-top:6px;font-size:12px;">관전 포인트: ${(res.watch_points||[]).join(', ')}</div>
+    </div>`;
+  }
+
+  async function loadIExplain(){
+    const t = today.toISOString().slice(0,10);
+    const res = await api(`/me/intraday_explain?ticker=NVDA&date=${t}&sector_ticker=SOXX&index_ticker=NDX`);
+    const el = document.getElementById('iexplain');
+    el.innerHTML = `<div style="border:1px solid #333;border-radius:10px;padding:12px;">
+      <div>당일 등락: <strong>${res.move_pct}%</strong> / 투자자 심리: <strong>${res.sentiment_label}</strong></div>
+      <div>기여도 - 회사 ${res.contrib.company}%, 섹터 ${res.contrib.sector}%, 거시 ${res.contrib.macro}%, 흐름 ${res.contrib.flow}%</div>
+      <div>VWAP: ${res.vwap ?? 'N/A'} / 섹터 상관: ${res.sector_corr} / 지수 상관: ${res.index_corr}</div>
+      <div style="margin-top:6px;">1일: ${res.one_day_view}</div>
+      <div>단기: ${res.short_term_view}</div>
+      <div>중장기: ${res.mid_long_view}</div>
+    </div>`;
+  }
+
+  function startSSE(){
+    const es = new EventSource('/me/alerts/stream');
+    const banner = document.getElementById('alert-banner');
+    const text = document.getElementById('alert-text');
+    es.addEventListener('alert', (ev)=>{
+      try{
+        const d = JSON.parse(ev.data);
+        banner.style.display='block';
+        text.textContent = `[${d.severity}] ${d.title} (중요도 ${d.importance_pct}%, 정확도 ${d.accuracy_pct}%)`;
+        setTimeout(()=>{ banner.style.display='none'; }, 15000);
+        loadFeed();
+      }catch(e){}
+    });
+  }
+
+  async function loadRisk(ticker='NVDA'){
+    const r = await api(`/market/risk?ticker=${ticker}`);
+    const el = document.getElementById('risk-body');
+    const gx = r.gamma_exposure!=null ? `${r.gamma_exposure.toLocaleString()} (USD)` : 'N/A';
+    const mp = r.max_pain!=null ? r.max_pain : 'N/A';
+    const pcr = r.put_call_ratio!=null ? r.put_call_ratio : 'N/A';
+    const sf = r.short_float_pct!=null ? `${r.short_float_pct}%` : 'N/A';
+    const dtc = r.days_to_cover!=null ? r.days_to_cover : 'N/A';
+    el.innerHTML = `
+      감마 노출: <b>${gx}</b><br/>
+      맥스 페인: <b>${mp}</b> / Put-Call Ratio: <b>${pcr}</b><br/>
+      공매도 비중: <b>${sf}</b> / Days-to-Cover: <b>${dtc}</b><br/>
+      <span style="color:#777;font-size:12px;">source: ${r.source || 'N/A'}</span>
+    `;
+  }
+
+  let ctxRadar;
+  async function loadCompanyContext(name='NVIDIA'){
+    const r = await api(`/company/context?company=${encodeURIComponent(name)}`);
+    const scores = r.scores || {};
+    const data = [
+      scores.customers ?? 60,
+      scores.supply ?? 60,
+      scores.policy_inverse ?? 70,
+      scores.competition_inverse ?? 65
+    ];
+    const labels = ['고객', '공급', '정책(낮을수록↑)', '경쟁(낮을수록↑)'];
+    const ctx = document.getElementById('ctx-radar').getContext('2d');
+    if (ctxRadar) ctxRadar.destroy();
+    ctxRadar = new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels,
+        datasets: [{
+          label: (r.company || name),
+          data,
+          fill: true,
+          backgroundColor: 'rgba(59, 130, 246, 0.2)',
+          borderColor: 'rgba(59, 130, 246, 1)',
+          pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: { r: { beginAtZero: true, max: 100, ticks: { backdropColor: '#222' }, pointLabels: { color: '#fff' } } },
+        plugins: { legend: { display: false } }
+      }
+    });
+    const L = r.lists || {};
+    document.getElementById('ctx-lists').innerHTML =
+      `<div>고객: ${(L.customers||[]).join(', ') || '-'}</div>
+       <div>공급: ${(L.suppliers||[]).join(', ') || '-'}</div>
+       <div>정책: ${(L.policies||[]).join(', ') || '-'}</div>
+       <div>경쟁: ${(L.competitors||[]).join(', ') || '-'}</div>`;
+  }
+
+  const modal = document.getElementById('modal-settings');
+  const backdrop = document.getElementById('modal-backdrop');
+
+  async function openSettings(){
+    const s = await api('/me/settings/alerts');
+    document.getElementById('qh-start').value = (s.quiet_hours?.start) || '23:00';
+    document.getElementById('qh-end').value   = (s.quiet_hours?.end)   || '07:00';
+    document.getElementById('min-imp').value  = s.min_importance ?? 70;
+    document.getElementById('sev-min').value  = (s.severity_min || 'LOW');
+    const cats = s.categories || [];
+    document.querySelectorAll('.cat').forEach(ch=>{
+      ch.checked = cats.includes(ch.value);
+    });
+    document.getElementById('gex-en').checked = !!s.gex?.enabled;
+    document.getElementById('gex-band').value = (s.gex?.zero_band_pct ?? 1.0);
+    document.getElementById('mp-en').checked = !!s.maxpain?.enabled;
+    document.getElementById('mp-gap').value = (s.maxpain?.gap_pct ?? 3.0);
+    modal.style.display='block'; backdrop.style.display='block';
+  }
+  function closeSettings(){
+    modal.style.display='none'; backdrop.style.display='none';
+  }
+
+  async function saveSettings(){
+    const payload = {
+      quiet_hours: { start: document.getElementById('qh-start').value,
+                     end:   document.getElementById('qh-end').value },
+      min_importance: parseInt(document.getElementById('min-imp').value,10),
+      categories: Array.from(document.querySelectorAll('.cat:checked')).map(x=>x.value),
+      severity_min: document.getElementById('sev-min').value,
+      gex: { enabled: document.getElementById('gex-en').checked,
+             zero_band_pct: parseFloat(document.getElementById('gex-band').value) },
+      maxpain: { enabled: document.getElementById('mp-en').checked,
+                 gap_pct: parseFloat(document.getElementById('mp-gap').value) }
+    };
+    await fetch('/me/settings/alerts', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+    closeSettings();
+  }
+
+  document.getElementById('btn-alert-settings').addEventListener('click', openSettings);
+  document.getElementById('btn-cancel').addEventListener('click', closeSettings);
+  document.getElementById('btn-save').addEventListener('click', saveSettings);
+
+  let gexChart;
+  async function loadGexSnake(ticker='NVDA'){
+    const js = await api(`/market/gex_curve?ticker=${ticker}`);
+    const curve = js.curve || [];
+    const labels = curve.map(d=>d.strike);
+    const data = curve.map(d=>d.gex);
+    const ctx = document.getElementById('gex-snake').getContext('2d');
+    if (gexChart) gexChart.destroy();
+    gexChart = new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets: [{ label: 'GEX', data, tension: 0.2, borderColor: '#60a5fa', backgroundColor: 'rgba(96, 165, 250, 0.1)', fill: true }] },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+        },
+        scales: {
+          x: { title: { display: true, text: 'Strike', color: '#aaa' }, ticks: { color: '#aaa' } },
+          y: { title: { display: true, text: 'GEX (sum of C - P)', color: '#aaa' }, ticks: { color: '#aaa' } }
+        }
+      }
+    });
+    document.getElementById('gex-meta').innerHTML =
+      `현물(Spot): <b>${js.spot ?? 'N/A'}</b>, 맥스페인: <b>${js.max_pain ?? 'N/A'}</b> · 업데이트: ${js.updated_at ? new Date(js.updated_at).toLocaleString() : '-'}`;
+  }
+
+  async function loadFeed(company_name) {
+    const data = await api(`/me/feed?company_name=${encodeURIComponent(company_name)}&min_importance=55&limit=20`);
+    const el = document.getElementById('feed');
+    el.innerHTML = (data.items||[]).map(it=>{
+      const pub = new Date(it.published_at).toLocaleString('ko-KR');
+      const badge = `<span style="padding:2px 6px;border-radius:6px;border:1px solid #ddd;margin-left:6px;">${it.severity}</span>`;
+      const imp = `<span style="margin-left:8px;color:#888;">중요도 ${it.importance_pct}%</span>`;
+      return `<div style="border:1px solid #333;border-radius:10px;padding:12px;margin-bottom:10px;">
+        <div style="font-weight:600">${it.title}${badge}${imp}</div>
+        <div style="font-size:12px;color:#999">${it.source_domain} · ${pub}</div>
+        <div style="font-size:12px;color:#ccc">카테고리: ${it.category} / 영향도: ${it.impact_level}</div>
+        <a href="${it.canonical_url}" target="_blank" style="font-size:12px;">원문보기</a>
+        ${evidenceToggleHTML(it.evidence)}
+      </div>`;
+    }).join('') || '<div>데이터 없음</div>';
+  }
+
+  const today = new Date();
+  const yday = new Date(today.getTime() - 86400000);
+  const ydayStr = yday.toISOString().slice(0,10);
+
+  async function loadRecap(ticker) {
+    const res = await api(`/me/recap?ticker=${encodeURIComponent(ticker)}&date=${ydayStr}`);
+    const el = document.getElementById('recap');
+    const list = (res.top_events||[]).map(e=>`<li>${e.title} <small>(${e.importance})</small></li>`).join('');
+    el.innerHTML = `<div style="border:1px solid #333;border-radius:10px;padding:12px;">
+      <div><strong>${res.date}</strong> 주요 사건</div>
+      <ul>${list || '<li>없음</li>'}</ul>
+      <div style="margin-top:6px;color:#ccc;">${res.yday_explain}</div>
+      <div style="margin-top:6px;font-size:12px;">관전 포인트: ${(res.watch_points||[]).join(', ')}</div>
+    </div>`;
+  }
+
+  async function loadIExplain(ticker) {
+    const t = today.toISOString().slice(0,10);
+    const res = await api(`/me/intraday_explain?ticker=${encodeURIComponent(ticker)}&date=${t}&sector_ticker=SOXX&index_ticker=NDX`);
+    const el = document.getElementById('iexplain');
+    el.innerHTML = `<div style="border:1px solid #333;border-radius:10px;padding:12px;">
+      <div>당일 등락: <strong>${res.move_pct}%</strong> / 투자자 심리: <strong>${res.sentiment_label}</strong></div>
+      <div>기여도 - 회사 ${res.contrib.company}%, 섹터 ${res.contrib.sector}%, 거시 ${res.contrib.macro}%, 흐름 ${res.contrib.flow}%</div>
+      <div>VWAP: ${res.vwap ?? 'N/A'} / 섹터 상관: ${res.sector_corr} / 지수 상관: ${res.index_corr}</div>
+      <div style="margin-top:6px;">1일: ${res.one_day_view}</div>
+      <div>단기: ${res.short_term_view}</div>
+      <div>중장기: ${res.mid_long_view}</div>
+    </div>`;
+  }
+
+  function startSSE(){
+    const es = new EventSource('/me/alerts/stream');
+    const banner = document.getElementById('alert-banner');
+    const text = document.getElementById('alert-text');
+    es.addEventListener('alert', (ev)=>{
+      try{
+        const d = JSON.parse(ev.data);
+        banner.style.display='block';
+        text.textContent = `[${d.severity}] ${d.title} (중요도 ${d.importance_pct}%, 정확도 ${d.accuracy_pct}%)`;
+        setTimeout(()=>{ banner.style.display='none'; }, 15000);
+        // Alerts should trigger a refresh of the relevant company's feed
+        const currentCompany = document.getElementById('company-select').value;
+        if (d.company === currentCompany) {
+          loadFeed(currentCompany);
+        }
+      }catch(e){}
+    });
+  }
+
+  async function loadRisk(ticker){
+    const r = await api(`/market/risk?ticker=${encodeURIComponent(ticker)}`);
+    const el = document.getElementById('risk-body');
+    const gx = r.gamma_exposure!=null ? `${r.gamma_exposure.toLocaleString()} (USD)` : 'N/A';
+    const mp = r.max_pain!=null ? r.max_pain : 'N/A';
+    const pcr = r.put_call_ratio!=null ? r.put_call_ratio : 'N/A';
+    const sf = r.short_float_pct!=null ? `${r.short_float_pct}%` : 'N/A';
+    const dtc = r.days_to_cover!=null ? r.days_to_cover : 'N/A';
+    el.innerHTML = `
+      감마 노출: <b>${gx}</b><br/>
+      맥스 페인: <b>${mp}</b> / Put-Call Ratio: <b>${pcr}</b><br/>
+      공매도 비중: <b>${sf}</b> / Days-to-Cover: <b>${dtc}</b><br/>
+      <span style="color:#777;font-size:12px;">source: ${r.source || 'N/A'}</span>
+    `;
+  }
+
+  let ctxRadar;
+  async function loadCompanyContext(name){
+    const r = await api(`/company/context?company=${encodeURIComponent(name)}`);
+    const scores = r.scores || {};
+    const data = [
+      scores.customers ?? 60,
+      scores.supply ?? 60,
+      scores.policy_inverse ?? 70,
+      scores.competition_inverse ?? 65
+    ];
+    const labels = ['고객', '공급', '정책(낮을수록↑)', '경쟁(낮을수록↑)'];
+    const ctx = document.getElementById('ctx-radar').getContext('2d');
+    if (ctxRadar) ctxRadar.destroy();
+    ctxRadar = new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels,
+        datasets: [{
+          label: (r.company || name),
+          data,
+          fill: true,
+          backgroundColor: 'rgba(59, 130, 246, 0.2)',
+          borderColor: 'rgba(59, 130, 246, 1)',
+          pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: { r: { beginAtZero: true, max: 100, ticks: { backdropColor: '#222' }, pointLabels: { color: '#fff' } } },
+        plugins: { legend: { display: false } }
+      }
+    });
+    const L = r.lists || {};
+    document.getElementById('ctx-lists').innerHTML =
+      `<div>고객: ${(L.customers||[]).join(', ') || '-'}</div>\n       <div>공급: ${(L.suppliers||[]).join(', ') || '-'}</div>\n       <div>정책: ${(L.policies||[]).join(', ') || '-'}</div>\n       <div>경쟁: ${(L.competitors||[]).join(', ') || '-'}</div>`;
+  }
+
+  const modal = document.getElementById('modal-settings');
+  const backdrop = document.getElementById('modal-backdrop');
+
+  async function openSettings(){
+    const s = await api('/me/settings/alerts');
+    document.getElementById('qh-start').value = (s.quiet_hours?.start) || '23:00';
+    document.getElementById('qh-end').value   = (s.quiet_hours?.end)   || '07:00';
+    document.getElementById('min-imp').value  = s.min_importance ?? 70;
+    document.getElementById('sev-min').value  = (s.severity_min || 'LOW');
+    const cats = s.categories || [];
+    document.querySelectorAll('.cat').forEach(ch=>{
+      ch.checked = cats.includes(ch.value);
+    });
+    document.getElementById('gex-en').checked = !!s.gex?.enabled;
+    document.getElementById('gex-band').value = (s.gex?.zero_band_pct ?? 1.0);
+    document.getElementById('mp-en').checked = !!s.maxpain?.enabled;
+    document.getElementById('mp-gap').value = (s.maxpain?.gap_pct ?? 3.0);
+    modal.style.display='block'; backdrop.style.display='block';
+  }
+  function closeSettings(){
+    modal.style.display='none'; backdrop.style.display='none';
+  }
+
+  async function saveSettings(){
+    const payload = {
+      quiet_hours: { start: document.getElementById('qh-start').value,
+                     end:   document.getElementById('qh-end').value },
+      min_importance: parseInt(document.getElementById('min-imp').value,10),
+      categories: Array.from(document.querySelectorAll('.cat:checked')).map(x=>x.value),
+      severity_min: document.getElementById('sev-min').value,
+      gex: { enabled: document.getElementById('gex-en').checked,
+             zero_band_pct: parseFloat(document.getElementById('gex-band').value) },
+      maxpain: { enabled: document.getElementById('mp-en').checked,
+                 gap_pct: parseFloat(document.getElementById('mp-gap').value) }
+    };
+    await fetch('/me/settings/alerts', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+    closeSettings();
+  }
+
+  document.getElementById('btn-alert-settings').addEventListener('click', openSettings);
+  document.getElementById('btn-cancel').addEventListener('click', closeSettings);
+  document.getElementById('btn-save').addEventListener('click', saveSettings);
+
+  let gexChart;
+  async function loadGexSnake(ticker){
+    const js = await api(`/market/gex_curve?ticker=${encodeURIComponent(ticker)}`);
+    const curve = js.curve || [];
+    const labels = curve.map(d=>d.strike);
+    const data = curve.map(d=>d.gex);
+    const ctx = document.getElementById('gex-snake').getContext('2d');
+    if (gexChart) gexChart.destroy();
+    gexChart = new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets: [{ label: 'GEX', data, tension: 0.2, borderColor: '#60a5fa', backgroundColor: 'rgba(96, 165, 250, 0.1)', fill: true }] },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+        },
+        scales: {
+          x: { title: { display: true, text: 'Strike', color: '#aaa' }, ticks: { color: '#aaa' } },
+          y: { title: { display: true, text: 'GEX (sum of C - P)', color: '#aaa' }, ticks: { color: '#aaa' } }
+        }
+      }
+    });
+    document.getElementById('gex-meta').innerHTML =
+      `현물(Spot): <b>${js.spot ?? 'N/A'}</b>, 맥스페인: <b>${js.max_pain ?? 'N/A'}</b> · 업데이트: ${js.updated_at ? new Date(js.updated_at).toLocaleString() : '-'}`;
+  }
+
+  // New functions for Market Analysis tab
+  async function loadMarketRisk(ticker){
+    const r = await api(`/market/risk?ticker=${encodeURIComponent(ticker)}`);
+    const el = document.getElementById('market-risk-body');
+    const gx = r.gamma_exposure!=null ? `${r.gamma_exposure.toLocaleString()} (USD)` : 'N/A';
+    const mp = r.max_pain!=null ? r.max_pain : 'N/A';
+    const pcr = r.put_call_ratio!=null ? r.put_call_ratio : 'N/A';
+    const sf = r.short_float_pct!=null ? `${r.short_float_pct}%` : 'N/A';
+    const dtc = r.days_to_cover!=null ? r.days_to_cover : 'N/A';
+    el.innerHTML = `
+      감마 노출: <b>${gx}</b><br/>
+      맥스 페인: <b>${mp}</b> / Put-Call Ratio: <b>${pcr}</b><br/>
+      공매도 비중: <b>${sf}</b> / Days-to-Cover: <b>${dtc}</b><br/>
+      <span style="color:#777;font-size:12px;">source: ${r.source || 'N/A'}</span>
+    `;
+  }
+
+  let marketGexChart;
+  async function loadMarketGexSnake(ticker){
+    const js = await api(`/market/gex_curve?ticker=${encodeURIComponent(ticker)}`);
+    const curve = js.curve || [];
+    const labels = curve.map(d=>d.strike);
+    const data = curve.map(d=>d.gex);
+    const ctx = document.getElementById('market-gex-snake').getContext('2d');
+    if (marketGexChart) marketGexChart.destroy();
+    marketGexChart = new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets: [{ label: 'GEX', data, tension: 0.2, borderColor: '#60a5fa', backgroundColor: 'rgba(96, 165, 250, 0.1)', fill: true }] },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+        },
+        scales: {
+          x: { title: { display: true, text: 'Strike', color: '#aaa' }, ticks: { color: '#aaa' } },
+          y: { title: { display: true, text: 'GEX (sum of C - P)', color: '#aaa' }, ticks: { color: '#aaa' } }
+        }
+      }
+    });
+    document.getElementById('market-gex-meta').innerHTML =
+      `현물(Spot): <b>${js.spot ?? 'N/A'}</b>, 맥스페인: <b>${js.max_pain ?? 'N/A'}</b> · 업데이트: ${js.updated_at ? new Date(js.updated_at).toLocaleString() : '-'}`;
+  }
+
+  // Function to load all data for the selected company
+  async function loadCompanyData(company_name) {
+    const ticker = company_name; // Assuming company_name can also be used as ticker for now
+    await loadFeed(company_name);
+    await loadRecap(ticker);
+    await loadIExplain(ticker);
+    await loadRisk(ticker);
+    await loadCompanyContext(company_name);
+    await loadGexSnake(ticker);
+  }
+
+  // Tab switching logic
+  const tabButtons = document.querySelectorAll('.tab-button');
+  const tabContents = document.querySelectorAll('.tab-content');
+
+  function showTab(tabId) {
+    tabContents.forEach(content => {
+      content.style.display = 'none';
+    });
+    document.getElementById(`tab-content-${tabId}`).style.display = 'block';
+
+    tabButtons.forEach(button => {
+      button.classList.remove('active');
+    });
+    document.querySelector(`.tab-button[data-tab="${tabId}"]`).classList.add('active');
+
+    window.location.hash = tabId;
+
+    // Load data for the active tab
+    const currentCompany = document.getElementById('company-select').value;
+    const ticker = currentCompany; // Assuming company_name can also be used as ticker for now
+
+    switch (tabId) {
+      case 'feed':
+        loadFeed(currentCompany);
+        break;
+      case 'analysis':
+        loadRisk(ticker);
+        loadCompanyContext(currentCompany);
+        loadGexSnake(ticker);
+        break;
+      case 'pre_market':
+        loadIExplain(ticker);
+        break;
+      case 'post_market':
+        loadRecap(ticker);
+        break;
+      case 'alerts':
+        // Alerts are handled by SSE, no specific load function here
+        // If there's a list of past alerts, a load function would go here.
+        break;
+      case 'market_analysis':
+        loadMarketRisk(ticker);
+        loadMarketGexSnake(ticker);
+        break;
+    }
+  }
+
+  // Function to handle hash changes
+  function handleHashChange() {
+    const hash = window.location.hash.substring(1); // Remove '#'
+    if (hash && document.getElementById(`tab-content-${hash}`)) {
+      showTab(hash);
+    } else {
+      showTab('feed'); // Default to 'feed' tab if hash is invalid or not present
+    }
+  }
+
+  tabButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      showTab(button.dataset.tab);
+    });
+  });
+
+  // Initial load
+  const initialCompany = document.getElementById('company-select').value;
+  loadCompanyData(initialCompany);
+  startSSE();
+
+  // Call handleHashChange on initial load and when hash changes
+  handleHashChange();
+  window.addEventListener('hashchange', handleHashChange);
+
+<script src="dashboard.js"></script>
+</body>
+</html>

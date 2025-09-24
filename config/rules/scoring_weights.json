@@ -1,0 +1,11 @@
+{
+  "IMPACT_HINT": {
+    "0.30": ["ban", "recall", "data breach", "antitrust probe", "guidance cut", "downgrade", "plant halt", "export ban"],
+    "0.20": ["merger", "acquisition", "ipo", "major partnership", "export control", "sanction"],
+    "0.15": ["lawsuit", "investigation", "shipment delay", "supply shortage", "production issue"]
+  },
+  "CATEGORY_WEIGHT": {
+    "financials": 1.0, "corporate_action": 0.95, "regulation": 0.90,
+    "supply_chain": 0.80, "product": 0.65, "competition": 0.55, "general": 0.40
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "CATEGORY_REGEX": {
+    "financials": "\b(earnings|revenue|profit|loss|guidance|q[1-4]|results|forecast|margin)\b",
+    "corporate_action": "\b(merger|acquisition|buyout|ipo|spin-?off|share buyback|dividend)\b",
+    "regulation": "\b(ban|approval|license|antitrust|probe|investigation|lawsuit|court|sanction|export control)\b",
+    "supply_chain": "\b(recall|manufacturing|production|shortage|shipment|inventory|lead time|capacity)\b",
+    "product": "\b(launch|unveil|release|update|feature|patent|roadmap|prototype|driver|sdk)\b",
+    "competition": "\b(competitor|market share|benchmark|rival|advantage)\b"
+  },
+  "EVENT_REGEX": {
+    "antitrust probe": "antitrust probe|competition authority investigation|EU investigation",
+    "guidance cut": "guidance cut|lowered guidance|revised guidance down",
+    "merger": "merger|merging with",
+    "acquisition": "acquisition|to acquire|buyout",
+    "recall": "\\b(recall|safety issue|defect)\\b",
+    "data breach": "data breach|ransomware|data leak",
+    "IPO": "IPO|initial public offering|listing"
+  }
+}

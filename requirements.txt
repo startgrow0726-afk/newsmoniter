@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+httpx
+feedparser
+asyncpg
+psycopg2-binary
+redis
+alembic
+apscheduler
+trafilatura
+pydantic
+python-json-logger
+prometheus-fastapi-instrumentator
+sqlalchemy

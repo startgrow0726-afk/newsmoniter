@@ -1,0 +1,55 @@
+{
+  "CATEGORY_REGEX": {
+    "financials": [
+      "guidance",
+      "earnings",
+      "revenue",
+      "profit",
+      "q[1-4]",
+      "dividend"
+    ],
+    "regulation": [
+      "antitrust",
+      "probe",
+      "investigation",
+      "ftc",
+      "sec",
+      "doj",
+      "fcc",
+      "eu commission"
+    ],
+    "corporate_action": [
+      "buyback",
+      "acquisition",
+      "merger",
+      "acquires",
+      "acquire"
+    ],
+    "supply_chain": [
+      "supply",
+      "shortage",
+      "factory",
+      "production",
+      "logistics"
+    ],
+    "product": [
+      "launch",
+      "release",
+      "unveil",
+      "recalls"
+    ],
+    "competition": [
+      "competitor",
+      "market share"
+    ],
+    "general": []
+  },
+  "EVENT_REGEX": {
+    "guidance cut": [
+      "(cuts|lowers|reduces|cut|lower|reduce).*guidance"
+    ],
+    "antitrust probe": [
+      "(antitrust|competition) (probe|investigation)"
+    ]
+  }
+}
