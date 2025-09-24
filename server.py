@@ -12,17 +12,17 @@ from typing import Optional
 import os
 from datetime import date as dt_date
 
-from api.storage.pg import get_conn, connect_db, disconnect_db, init_db
-from api.utils.logger import setup_logger, request_id_ctx, get_request_id
-from api.utils.metrics import *
-from api.modules.alerts.bus import bus
-from api.modules.markets.explain import explain_intraday_move
-from api.modules.markets.recap import daily_recap
-from api.modules.personalize.ranker import rank_score
-from api.modules.markets.risk_refresh import refresh_market_risk
-from api.modules.context.rebuilder import rebuild_company_context
+from storage.pg import get_conn, connect_db, disconnect_db, init_db
+from utils.logger import setup_logger, request_id_ctx, get_request_id
+from utils.metrics import *
+from modules.alerts.bus import bus
+from modules.markets.explain import explain_intraday_move
+from modules.markets.recap import daily_recap
+from modules.personalize.ranker import rank_score
+from modules.markets.risk_refresh import refresh_market_risk
+from modules.context.rebuilder import rebuild_company_context
 
-log = setup_logger("api")
+log = setup_logger("server")
 
 app = FastAPI()
 
@@ -83,7 +83,7 @@ def health():
 
 @app.post("/subscribe_email")
 async def subscribe_email(email: str = Body(..., embed=True)):
-    email_file_path = os.path.join(os.path.dirname(__file__), "..", "subscribed_emails.txt")
+    email_file_path = os.path.join(os.path.dirname(__file__), "subscribed_emails.txt")
     with open(email_file_path, "a") as f:
         f.write(f"{datetime.now().isoformat()}: {email}\n")
     return {"message": "Email subscribed successfully!"}
@@ -472,8 +472,5 @@ def debug_static_path():
         "index_exists": os.path.isfile(index_path),
     }
 
-# ----- Static files (Web UI) -----
-# NOTE: This must be the LAST mount to avoid overriding API endpoints.
-# 실행 위치에 관계없이 항상 정확한 경로를 찾도록 수정
-web_dir_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "web"))
+web_dir_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "web"))
 app.mount("/", StaticFiles(directory=web_dir_path, html=True), name="web")
