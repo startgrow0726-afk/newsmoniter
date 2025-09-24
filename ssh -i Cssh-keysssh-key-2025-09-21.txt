@@ -1,0 +1,6 @@
+ssh -i "C:\ssh-keys\ssh-key-2025-09-21 (2).key" ubuntu@168.107.18.155 
+서버 실행
+git status
+git add .
+git commit -m "update: "
+git push origin main

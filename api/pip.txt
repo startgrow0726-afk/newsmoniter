@@ -1,6 +1,4 @@
 fastapi
-fastapi.staticfiles
-fastapi.responses
 prometheus_client
 starlette.middleware.base
 sse_starlette.sse
