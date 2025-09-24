@@ -4,3 +4,5 @@ git status
 git add .
 git commit -m "update: "
 git push origin main
+
+git pull origin main #서버에서
