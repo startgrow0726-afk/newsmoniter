@@ -81,6 +81,13 @@ app.mount("/metrics", metrics_app)
 def health():
     return {"ok": True, "rid": get_request_id()}
 
+@app.post("/subscribe_email")
+async def subscribe_email(email: str = Body(..., embed=True)):
+    email_file_path = os.path.join(os.path.dirname(__file__), "..", "subscribed_emails.txt")
+    with open(email_file_path, "a") as f:
+        f.write(f"{datetime.now().isoformat()}: {email}\n")
+    return {"message": "Email subscribed successfully!"}
+
 # --- 공통 유틸 ---
 def in_quiet_hours(user_prefs: dict, now_utc: datetime, tz_name: str = 'Asia/Seoul') -> bool:
     # quiet_hours_start/end: 'HH:MM'
