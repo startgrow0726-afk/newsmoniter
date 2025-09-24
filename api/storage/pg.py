@@ -5,13 +5,7 @@ import asyncio
 _pool = None
 
 async def _dsn():
-    return (
-        f"postgresql://{os.getenv('POSTGRES_USER','newsmon')}:"
-        f"{os.getenv('POSTGRES_PASSWORD','change_me_strong')}@"
-        f"{os.getenv('POSTGRES_HOST','localhost')}:"
-        f"{os.getenv('POSTGRES_PORT','5432')}/"
-        f"{os.getenv('POSTGRES_DB','newsmon')}"
-    )
+    return "postgresql://newsuser:비밀번호@127.0.0.1:5432/newsmoniter"
 
 async def connect_db():
     global _pool

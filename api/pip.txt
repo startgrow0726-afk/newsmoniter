@@ -3,3 +3,5 @@ uvicorn
 prometheus-client
 sse-starlette
 pytz
+asyncpg
+python-json-logger
