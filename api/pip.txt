@@ -1,5 +1,5 @@
 fastapi
-prometheus_client
-starlette.middleware.base
-sse_starlette.sse
+uvicorn
+prometheus-client
+sse-starlette
 pytz
