@@ -20,3 +20,5 @@ sudo systemctl enable postgresql
 
 기본 계정 및 DB 생성
 sudo -u postgres psql
+
+uvicorn server:app --reload --port 8000
