@@ -5,7 +5,7 @@ import asyncio
 _pool = None
 
 async def _dsn():
-    return "postgresql://newsuser:비밀번호@127.0.0.1:5432/newsmoniter"
+    return "postgresql://newsuser:비밀번호@168.107.18.155:5432/newsmoniter"
 
 async def connect_db():
     global _pool

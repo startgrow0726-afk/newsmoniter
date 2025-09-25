@@ -2,7 +2,7 @@ import os, psycopg2
 
 try:
     dsn = (
-        f"host={os.getenv('POSTGRES_HOST','localhost')} "
+        f"host={os.getenv('POSTGRES_HOST','168.107.18.155')} "
         f"port={os.getenv('POSTGRES_PORT','5432')} "
         f"dbname={os.getenv('POSTGRES_DB','newsmon')} "
         f"user={os.getenv('POSTGRES_USER','newsmon')} "

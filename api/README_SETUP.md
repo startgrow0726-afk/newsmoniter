@@ -98,9 +98,9 @@ psql -U newsmon -d newsmon -f /var/lib/postgresql/data/schema.sql
 
 ### cURL 예시
 ```bash
-curl "http://localhost:3000/feed?limit=5"
-curl "http://localhost:3000/me/intraday_explain?ticker=NVDA&date=2025-09-19"
-curl "http://localhost:3000/me/recap?ticker=NVDA&date=2025-09-19"
+curl "http://168.107.18.155:3000/feed?limit=5"
+curl "http://168.107.18.155:3000/me/intraday_explain?ticker=NVDA&date=2025-09-19"
+curl "http://168.107.18.155:3000/me/recap?ticker=NVDA&date=2025-09-19"
 ```
 
 ## 8) Windows 경로/PowerShell 팁

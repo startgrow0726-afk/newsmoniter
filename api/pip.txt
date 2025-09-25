@@ -5,3 +5,4 @@ sse-starlette
 pytz
 asyncpg
 python-json-logger
+httpx

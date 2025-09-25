@@ -6,3 +6,17 @@ git commit -m "update: "
 git push origin main
 
 git pull origin main #서버에서
+
+PostgreSQL 설치
+sudo apt update
+sudo apt install postgresql postgresql-contrib -y
+
+PostgreSQL 실행 여부 확인
+sudo systemctl status postgresql
+->active (running)가 아닌시
+sudo systemctl start postgresql
+sudo systemctl enable postgresql
+
+
+기본 계정 및 DB 생성
+sudo -u postgres psql
